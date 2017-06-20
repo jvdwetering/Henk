@@ -152,7 +152,9 @@ class Henk(object):
             s = "Lijst van je geleerde commando's:"
             for i, d in enumerate(r):
                 s += "\n%d.: %s -> %s" % (i, d[0], d[1])
-            bot.sendMessage(chat_id, s)
+            lines = s.splitlines()
+            for i in range(0, len(lines), 20):
+                bot.sendMessage(chat_id, "\n".join(lines[i:i+20]))
             return
 
         if rawcommand.startswith("/delete"):
