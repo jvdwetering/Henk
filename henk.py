@@ -9,6 +9,7 @@ Install these with "pip install libname" and for textblob additionally call pyth
 import time
 import random
 import json
+import urllib3
 
 import simpleeval #for evaluating math expressions
 simpleeval.MAX_POWER=1000
@@ -21,7 +22,7 @@ from telepot.namedtuple import InlineQueryResultArticle, InlineQueryResultPhoto,
 import get_wikipedia
 from managedata import ManageData
 import longstrings
-from util import get_current_hour, normalise, startswith, pick, probaccept
+from util import get_current_hour, normalise, startswith, probaccept
 
 import math
 math_constants = {"pi": math.pi, "e": math.e, "true": True, "false": False, "True": True, "False": False}
@@ -34,6 +35,7 @@ class Henk(object):
 
         self.querycounts = {}
         self.lastupdate = 0
+        self.active = False
 
     def load_files(self):
         f = open("grappen.txt","r")
@@ -58,20 +60,50 @@ class Henk(object):
                 del self.userresponses[k]
         self.silentchats = dataManager.get_silent_chats()
 
+    def sendMessage(self, chat_id, s):
+        bot.sendMessage(chat_id, s)
+        if probaccept(0.8): self.active = True
+        else: self.active = False
+
+    def pick(self, options):
+        return random.sample(l,1)[0].replace("!name", self.sendername)
+
     def update_querycounts(self, amount):
         for q in self.querycounts:
             self.querycounts[q] = max([0,self.querycounts[q]-amount])
+
+    def react_to_query(self, q):
+        if q not in self.querycounts: self.querycounts[q] = 0
+        if q.find("henk") != -1 or self.active:
+            self.querycounts[q] += 1
+            self.active = True
+            return True
+        if probaccept(2**-(max([self.querycounts[q]-1,0]))):
+            self.querycounts[q] += 1
+            self.active = True
+            return True
+        return False
+
+    
+                    
 
     def on_chat_message(self, msg):
         content_type, chat_type, chat_id = telepot.glance(msg)
         if content_type != 'text':
             print('Chat:', content_type, chat_type, chat_id)
+            self.active = False
             return
 
         dataManager.write_message(msg)
         rawcommand = msg['text']
         command = normalise(msg['text'])
         print('Chat:', chat_type, chat_id, command)
+        try:
+            self.sender = msg['from']['id']
+            self.sendername = msg['from']['first_name']
+        except:
+            self.sender = 0
+            self.sendername = ""
 
         #serious stuff first
 
@@ -86,7 +118,7 @@ class Henk(object):
         
         if rawcommand.startswith('/say '):
             try:
-                if msg['from']['id'] == ADMIN:
+                if self.sender == ADMIN:
                     bot.sendMessage(PPA, rawcommand[4:])
                     return
             except KeyError:
@@ -94,7 +126,7 @@ class Henk(object):
 
         if rawcommand == "/reload":
             try:
-                if msg['from']['id'] == ADMIN:
+                if self.sender == ADMIN:
                     self.load_files()
                     bot.sendMessage(chat_id, "reloading files")
                     return
@@ -140,7 +172,7 @@ class Henk(object):
                     bot.sendMessage(chat_id, "geen geldig label")
                     return
                 else: self.responses[c[1:]].extend(responses)
-            dataManager.add_response(c, responses, msg['from']['id'], msg['date'])
+            dataManager.add_response(c, responses, self.sender, msg['date'])
             if not c.startswith("$"):
                 if c in self.userresponses: self.userresponses[c].extend(responses)
                 else: self.userresponses[c] = responses
@@ -148,7 +180,7 @@ class Henk(object):
             return
 
         if rawcommand.startswith("/viewresponses"):
-            r = dataManager.get_user_responses(msg['from']['id'])
+            r = dataManager.get_user_responses(self.sender)
             s = "Lijst van je geleerde commando's:"
             for i, d in enumerate(r):
                 s += "\n%d.: %s -> %s" % (i, d[0], d[1])
@@ -162,7 +194,7 @@ class Henk(object):
             if not n.isdigit():
                 bot.sendMessage(chat_id, "dat is geen geldig getal")
                 return
-            if dataManager.delete_response(msg['from']['id'], int(n)):
+            if dataManager.delete_response(self.sender, int(n)):
                 self.load_files()
                 bot.sendMessage(chat_id, "Gelukt!")
             else:
@@ -186,6 +218,7 @@ class Henk(object):
             
             
         if chat_id in self.silentchats:
+            self.active = False
             return
         
         #now for the fun stuff :)
@@ -194,20 +227,11 @@ class Henk(object):
         c = command.replace(", "," ").replace("?","")
         if c in self.userresponses.keys():
             t = msg['date']
-            if t-self.lastupdate > 3600:
+            if t-self.lastupdate > 600:
                 self.update_querycounts(int((t-self.lastupdate)/3600))
                 self.lastupdate = t
-            if c in self.querycounts:
-                if probaccept(2**-self.querycounts[c]):
-                    self.querycounts[c] += 1
-                    p = pick(self.userresponses[c])
-                    try: p = p.replace("!name", msg['from']['first_name'])
-                    except: pass
-                    if p: bot.sendMessage(chat_id, p)
-                    return
-            else:
-                self.querycounts[c] = 1
-                p = pick(self.userresponses[c])
+            if self.react_to_query(c):
+                p = self.pick(self.userresponses[c])
                 try: p = p.replace("!name", msg['from']['first_name'])
                 except: pass
                 if p: bot.sendMessage(chat_id, p)
@@ -215,7 +239,7 @@ class Henk(object):
             
         #respond to cussing
         if startswith(command.replace(", "," "), self.commands['cuss_out']):
-            bot.sendMessage(chat_id, pick(self.responses['cuss_out']))
+            self.sendMessage(chat_id, self.pick(self.responses['cuss_out']))
             return
         
         for i in self.commands['introductions']:
@@ -223,55 +247,55 @@ class Henk(object):
                 command = command[len(i)+1:].strip()
                 break
         else:
-            return #no introduction given
+            if not self.active: return #no introduction given and not active
         if command.startswith(","): command = command[1:].strip()
         if command.startswith("."): command = command[1:].strip()
         if not command: #only an introduction, no further text
             try:
                 name = msg['from']['first_name']
                 if name == "Olaf": name = "Slomp"
-                val = pick(self.responses["hi"]).replace("!name",name)
-                bot.sendMessage(chat_id, val)
+                val = self.pick(self.responses["hi"]).replace("!name",name)
+                self.sendMessage(chat_id, val)
                 return
             except KeyError:
+                self.active = False
                 return
 
         if command.startswith("wat kun je allemaal"):
-            bot.sendMessage(chat_id, longstrings.helptext)
+            self.sendMessage(chat_id, longstrings.helptext)
             return
 
         if command.startswith("hoe kunnen we je helpen dingen te leren"):
-            bot.sendMessage(chat_id, longstrings.learnhelp)
+            self.sendMessage(chat_id, longstrings.learnhelp)
             return
 
         #jokes
         val = startswith(command, self.commands["funny"])
         if val:
-            s = pick(["Sure: ", "oké. ", ""])
+            s = self.pick(["Sure: ", "oké. ", ""])
             if probaccept(0.5):
-                bot.sendMessage(chat_id, s+pick(self.jokes))
+                self.sendMessage(chat_id, s+self.pick(self.jokes))
             else:
-                bot.sendMessage(chat_id,pick(self.facts))
+                self.sendMessage(chat_id,self.pick(self.facts))
             return
 
         #facts
         val = startswith(command, self.commands["amuse"])
         if val:
             if probaccept(0.5):
-                bot.sendMessage(chat_id,pick(self.facts))
+                self.sendMessage(chat_id,self.pick(self.facts))
             else:
                 s = get_wikipedia.random_wiki_text()
-                if s:
-                    bot.sendMessage(chat_id,s)
+                if s: self.sendMessage(chat_id,s)
             return
 
         #spam check
         if startswith(command, self.commands["spam_ask"]):
             s = self.response_stats(chat_id)
-            bot.sendMessage(chat_id, s)
+            self.sendMessage(chat_id, s)
             return
         if startswith(command, self.commands["spam_react"]):
-            bot.sendMessage(chat_id, "spam"*random.randint(3,15))
+            self.sendMessage(chat_id, "spam"*random.randint(3,15))
             return
         
         #math
@@ -279,58 +303,60 @@ class Henk(object):
         if val:
             t = command[len(val)+1:].strip()
             if t.endswith("?"): t = t[:-1]
-            bot.sendMessage(chat_id, self.response_math(t))
+            self.sendMessage(chat_id, self.response_math(t))
             return
         
         #wiki question
         val = startswith(command, self.commands["question"])
         if val:
             if command.find("moeder")!=-1:
-                bot.sendMessage(chat_id, pick(self.responses["je_moeder"]))
+                self.sendMessage(chat_id, self.pick(self.responses["je_moeder"]))
                 return
             i = rawcommand.find(val) # we need the original because capitalization is important
             if i == -1: t = command[len(val)+1:]#the question is capitalized or something, fall back
             else: t = rawcommand[i+len(val)+1:]
             t = t.replace("?","").replace("!","").replace(".","").replace('"',"").strip()
             res = get_wikipedia.wiki_text(t)
-            if res:
-                bot.sendMessage(chat_id, res)
+            if res: self.sendMessage(chat_id, res)
             else:
                 if probaccept(0.5):
-                    bot.sendMessage(chat_id, pick(self.responses["wiki_failure"]))
-                else: bot.sendMessage(chat_id, pick(self.responses["negative_response"]))
+                    self.sendMessage(chat_id, self.pick(self.responses["wiki_failure"]))
+                else: self.sendMessage(chat_id, self.pick(self.responses["negative_response"]))
             return
         
         #random reactions
         if len(command)>10:
             if command[-5:].find("?")!=-1:
-                if command.find("hoeveel")!=-1:
-                    bot.sendMessage(chat_id, pick(self.responses["question_amount"]))
+                if command.find("hoeveel")!=-1 or command.find("hoe vaak")!=-1:
+                    self.sendMessage(chat_id, self.pick(self.responses["question_amount"]))
                 elif command.find("waarom")!=-1:
-                    bot.sendMessage(chat_id, pick(self.responses["question_why"]))
+                    self.sendMessage(chat_id, self.pick(self.responses["question_why"]))
                 elif command.find("wat vind")!=-1 or command.find("hoe denk")!=-1 or command.find("vind je")!=-1:
-                    bot.sendMessage(chat_id, pick(self.responses["question_opinion"]))
+                    self.sendMessage(chat_id, self.pick(self.responses["question_opinion"]))
                 elif command.find("wat ")!=-1:
-                    bot.sendMessage(chat_id, pick(self.responses["question_what"]))
+                    self.sendMessage(chat_id, self.pick(self.responses["question_what"]))
                 elif command.find("waar ")!=-1:
-                    bot.sendMessage(chat_id, pick(self.responses["question_where"]))
+                    self.sendMessage(chat_id, self.pick(self.responses["question_where"]))
                 elif command.find("hoe ")!=-1:
-                    bot.sendMessage(chat_id, pick(self.responses["question_how"]))
+                    self.sendMessage(chat_id, self.pick(self.responses["question_how"]))
                 elif command.find("wanneer")!=-1:
-                    bot.sendMessage(chat_id, pick(self.responses["question_when"]))
+                    self.sendMessage(chat_id, self.pick(self.responses["question_when"]))
                 elif command.find("welk")!=-1:
-                    bot.sendMessage(chat_id, pick(self.responses["question_which"]))
+                    self.sendMessage(chat_id, self.pick(self.responses["question_which"]))
                 elif command.find("wie")!=-1:
-                    bot.sendMessage(chat_id, pick(self.responses["question_who"]))
+                    self.sendMessage(chat_id, self.pick(self.responses["question_who"]))
                 else:
-                    bot.sendMessage(chat_id, pick(self.responses["question_degree"]))
+                    self.sendMessage(chat_id, self.pick(self.responses["question_degree"]))
                 return
+            self.active = False
             if probaccept(0.5):
-                bot.sendMessage(chat_id, pick(self.openinglines))
+                bot.sendMessage(chat_id, self.pick(self.openinglines))
                 return
-            if probaccept(0.5):
-                bot.sendMessage(chat_id,pick(self.responses["negative_response"]))
+            elif probaccept(0.5):
+                bot.sendMessage(chat_id,self.pick(self.responses["negative_response"]))
             return
+
+        self.active = False
 
 
     def on_callback_query(self, msg):
@@ -365,7 +391,7 @@ class Henk(object):
             return "Dat is " + str(result)
         except (simpleeval.InvalidExpression, simpleeval.FunctionNotDefined,
                 simpleeval.AttributeDoesNotExist,KeyError):
-            if not clean: return pick(self.commands["math_error"])
+            if not clean: return self.pick(self.commands["math_error"])
             else: return "Sorry, dat snap ik niet :("
         except simpleeval.NumberTooHigh:
             return "Sorry, dat is te moeilijk voor me"
@@ -421,7 +447,12 @@ if __name__ == '__main__':
 
         # Keep the program running.
         while True:
-            time.sleep(1)
+            try:
+                time.sleep(1)
+            except ConnectionResetError:
+                print("ConnectionResetError")
+            except urllib3.exceptions.ProtocolError:
+                print("ProtocolError")
     except KeyboardInterrupt:
         pass
     finally:
