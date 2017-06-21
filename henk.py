@@ -66,7 +66,7 @@ class Henk(object):
         else: self.active = False
 
     def pick(self, options):
-        return random.sample(l,1)[0].replace("!name", self.sendername)
+        return random.sample(options,1)[0].replace("!name", self.sendername)
 
     def update_querycounts(self, amount):
         for q in self.querycounts:
