@@ -22,6 +22,7 @@ def decrypt():
 
 
 PPA = -6722364 #hardcoded label for party pownies
+PPA = -218118195 #Henk's fun palace
 
 wordfilterlist = [
     "dat", "wel", "het", "hoi", "jij",
@@ -122,7 +123,7 @@ class ManageData(object):
         
 
 def tf(word, blob):
-    return blob.words.count(word) / len(blob.words)
+    return (blob.words.count(word)+1) / len(blob.words)
 
 def n_containing(word, bloblist):
     return sum(1 for blob in bloblist if word in blob.words)
@@ -133,11 +134,17 @@ def idf(word, bloblist):
 def tfidf(word, blob, bloblist):
     return tf(word, blob) * idf(word, bloblist)
 
+def comp_freq(word, blob1, blob2):
+    return tf(word,blob1)/tf(word,blob2)
+
+def top_words(blob1,blob2):
+    return sorted(blob1.words, key=lambda x: comp_freq(x,blob1,blob2),reverse=True)
+
 if __name__ == '__main__':
     m = ManageData()
     data = m.db['Messages'].all()
     totaltext = "\n".join(i['text'] for i in data)
     b1 = TextBlob(totaltext)
-    data = m.latest_messages(PPA)
+    data = m.latest_messages(PPA, 24)
     t = "\n".join(i['text'] for i in data)
     b2 =TextBlob(t)

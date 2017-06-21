@@ -62,7 +62,7 @@ class Henk(object):
 
     def sendMessage(self, chat_id, s):
         bot.sendMessage(chat_id, s)
-        if probaccept(0.8): self.active = True
+        if probaccept(0.7): self.active = True
         else: self.active = False
 
     def pick(self, options):
@@ -97,7 +97,10 @@ class Henk(object):
         dataManager.write_message(msg)
         rawcommand = msg['text']
         command = normalise(msg['text'])
-        print('Chat:', chat_type, chat_id, command)
+        try:
+            print('Chat:', chat_type, chat_id, command)
+        except UnicodeDecodeError:
+            print('Chat:', chat_type, chat_id, command.encode('utf-8'))
         try:
             self.sender = msg['from']['id']
             self.sendername = msg['from']['first_name']
@@ -134,6 +137,21 @@ class Henk(object):
                 bot.sendMessage(chat_id, "I'm afraid I can't let you do that")
                 return
 
+        if rawcommand.startswith("/setsilent"):
+            t = rawcommand[11:].strip()
+            if not t.isdigit():
+                bot.sendMessage(chat_id, "1 of 0 aub")
+                return
+            else:
+                v = int(bool(int(t)))
+                dataManager.set_silent_mode(chat_id, v)
+                if v == 1 and not chat_id in self.silentchats:
+                    self.silentchats.append(chat_id)
+                if v == 0 and chat_id in self.silentchats:
+                    self.silentchats.remove(chat_id)
+                bot.sendMessage(chat_id, "done")
+                return
+
         if rawcommand.startswith("/wiki"):
             text = rawcommand[6:]
             res = get_wikipedia.wiki_text(text)
@@ -151,6 +169,13 @@ class Henk(object):
             bot.sendMessage(chat_id, text)
             return
 
+        if rawcommand.startswith("/learnstats"):
+            r = dataManager.get_all_responses()
+            c = len(r)
+            d = sum([len(i) for i in r.values()])
+            bot.sendMessage(chat_id, "Ik ken %d custom queries, en heb daar in totaal %d responses op" % (c,d))
+            return
+
         if rawcommand.startswith("/learn"):
             if rawcommand.find("->") == -1:
                 bot.sendMessage(chat_id, "ik mis een '->' om aan te geven hoe de argumenten gescheiden zijn")
@@ -159,7 +184,7 @@ class Henk(object):
             if not responses:
                 bot.sendMessage(chat_id, "geef geldige responses pl0x")
                 return
-            c = normalise(call).replace(", ", " ").replace("?","")
+            c = call.lower().strip().replace(", ", " ").replace("?","")
             if c in (self.commands["introductions"] + self.commands["funny"]
                      + self.commands["amuse"] + self.commands["spam_ask"]):
                 bot.sendMessage(chat_id, "deze query mag niet (beschermd)")
@@ -200,22 +225,6 @@ class Henk(object):
             else:
                 bot.sendMessage(chat_id, "hmm, iets ging mis. Check even of het getal daadwerkelijk klopt")
             return
-
-        if rawcommand.startswith("/setsilent"):
-            t = rawcommand[11:].strip()
-            if not t.isdigit():
-                bot.sendMessage(chat_id, "1 of 0 aub")
-                return
-            else:
-                v = int(bool(int(t)))
-                dataManager.set_silent_mode(chat_id, v)
-                if v == 1 and not chat_id in self.silentchats:
-                    self.silentchats.append(chat_id)
-                if v == 0 and chat_id in self.silentchats:
-                    self.silentchats.remove(chat_id)
-                bot.sendMessage(chat_id, "done")
-                return
-            
             
         if chat_id in self.silentchats:
             self.active = False
@@ -224,7 +233,7 @@ class Henk(object):
         #now for the fun stuff :)
 
         #custom user commands
-        c = command.replace(", "," ").replace("?","")
+        c = rawcommand.lower().strip().replace(", "," ").replace("?","")
         if c in self.userresponses.keys():
             t = msg['date']
             if t-self.lastupdate > 600:
