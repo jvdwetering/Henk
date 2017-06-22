@@ -15,10 +15,12 @@ password = f.read()
 f.close()
 
 def encrypt():
-    call(r"openssl enc -aes-256-cbc -salt -in data.db -out data.db.enc -pass pass:"+password)
+    call(r"openssl enc -aes-256-cbc -salt -in data.db -out data.db.enc -pass pass:"+password,
+         shell=True)
 
 def decrypt():
-    call(r"openssl enc -d -aes-256-cbc -salt -in data.db.enc -out data.db -pass pass:"+password)
+    call(r"openssl enc -d -aes-256-cbc -salt -in data.db.enc -out data.db -pass pass:"+password,
+         shell=True)
 
 
 PPA = -6722364 #hardcoded label for party pownies
