@@ -422,7 +422,7 @@ class Henk(object):
                 elif command.find("waarom")!=-1:
                     self.sendMessage(chat_id, self.pick(self.responses["question_why"]))
                 elif (command.find("wat vind")!=-1 or command.find("hoe denk")!=-1 or command.find("vind je")!=-1
-                    or command.find("wat is je mening")!=-1 or command.find("wat denk"):
+                    or command.find("wat is je mening")!=-1 or command.find("wat denk")!=-1:
                     self.sendMessage(chat_id, self.pick(self.responses["question_opinion"]))
                 elif command.find("wat ")!=-1:
                     self.sendMessage(chat_id, self.pick(self.responses["question_what"]))
