@@ -24,7 +24,7 @@ from telepot.namedtuple import InlineQueryResultArticle, InlineQueryResultPhoto,
 import get_wikipedia
 from managedata import ManageData
 import longstrings
-from util import get_current_hour, normalise, startswith, probaccept
+from util import get_current_hour, normalise, prepare_query, startswith, probaccept
 
 import math
 math_constants = {"pi": math.pi, "e": math.e, "true": True, "false": False, "True": True, "False": False}
@@ -55,11 +55,36 @@ class Henk(object):
         self.commands = d["commands"]
         self.responses = d["responses"]
 
-        self.userresponses = dataManager.get_all_responses()
-        for k,v in list(self.userresponses.items()):
-            if k.startswith("$"):
+        aliases = dataManager.get_all_aliases()
+        self.aliasdict = {} #mapping a query to an int
+        i = 0
+        for synonyms in aliases: #go trough all lists of aliases
+            for query in self.aliasdict: #for all registered aliases
+                if query in synonyms: #check if it is in this list
+                    for s in synonyms: #and then register them as the same
+                        self.aliasdict[s] = self.aliasdict[query]
+                else: #if not in the registered list
+                    for s in synonyms: #register them as a new subset
+                        self.aliasdict[s] = i
+                        i += 1
+
+        d = dataManager.get_all_responses()
+        for k,v in list(d.items()):
+            if k.startswith("$"): #special queries such as $question_what
                 self.responses[k[1:]].extend(v)
-                del self.userresponses[k]
+                del d[k]
+
+        self.userresponses = {} #mapping an int (from aliases) to a list of responses
+        for query in d:
+            if query in self.aliasdict:
+                if self.aliasdict[query] in self.userresponses:
+                    self.userresponses[self.aliasdict[query]].extend(d[query])
+                else: self.userresponses[self.aliasdict[query]] = d[query]
+            else:
+                self.aliasdict[query] = i
+                self.userresponses[i] = d[query]
+                i += 1
+        
         self.silentchats = dataManager.get_silent_chats()
 
     def sendMessage(self, chat_id, s):
@@ -75,19 +100,16 @@ class Henk(object):
             self.querycounts[q] = max([0,self.querycounts[q]-amount])
 
     def react_to_query(self, q):
-        if q not in self.querycounts: self.querycounts[q] = 0
-        if q.find("henk") != -1 or self.active:
-            self.querycounts[q] += 1
-            self.active = True
-            return True
-        if probaccept(2**-(max([self.querycounts[q]-1,0]))):
-            self.querycounts[q] += 1
+        i = self.aliasdict[q]
+        if i not in self.querycounts: self.querycounts[i] = 0
+        if (q.find("henk") != -1 or (self.active and probaccept(2**-(max([self.querycounts[i]-3,0]))))
+            or probaccept(2**-(max([self.querycounts[i]-1,0])))):
+            self.querycounts[i] += 1
             self.active = True
             return True
         return False
 
-    
-                    
+       
 
     def on_chat_message(self, msg):
         content_type, chat_type, chat_id = telepot.glance(msg)
@@ -186,7 +208,7 @@ class Henk(object):
             if not responses:
                 bot.sendMessage(chat_id, "geef geldige responses pl0x")
                 return
-            c = call.lower().strip().replace(", ", " ").replace("?","")
+            c = prepare_query(call)
             if c in (self.commands["introductions"] + self.commands["funny"]
                      + self.commands["amuse"] + self.commands["spam_ask"]):
                 bot.sendMessage(chat_id, "deze query mag niet (beschermd)")
@@ -201,12 +223,14 @@ class Henk(object):
                 else: self.responses[c[1:]].extend(responses)
             dataManager.add_response(c, responses, self.sender, msg['date'])
             if not c.startswith("$"):
-                if c in self.userresponses: self.userresponses[c].extend(responses)
-                else: self.userresponses[c] = responses
+                if c in self.aliasdict: self.userresponses[self.aliasdict[c]].extend(responses)
+                else:
+                    self.aliasdict[c] = len(self.userresponses)
+                    self.userresponses[self.aliasdict[c]] = responses
             bot.sendMessage(chat_id, "ik denk dat ik het snap")
             return
 
-        if rawcommand.startswith("/viewresponses"):
+        if rawcommand.startswith("/myresponses"):
             r = dataManager.get_user_responses(self.sender)
             s = "Lijst van je geleerde commando's:"
             for i, d in enumerate(r):
@@ -216,8 +240,8 @@ class Henk(object):
                 bot.sendMessage(chat_id, "\n".join(lines[i:i+15]))
             return
 
-        if rawcommand.startswith("/delete"):
-            n = rawcommand[8:].strip()
+        if rawcommand.startswith("/deleteresponse"):
+            n = rawcommand[16:].strip()
             if not n.isdigit():
                 bot.sendMessage(chat_id, "dat is geen geldig getal")
                 return
@@ -227,7 +251,62 @@ class Henk(object):
             else:
                 bot.sendMessage(chat_id, "hmm, iets ging mis. Check even of het getal daadwerkelijk klopt")
             return
+
+        if rawcommand.startswith("/alias"):
+            s = rawcommand[7:].strip()
+            options = [prepare_query(i) for i in s.split("|")]
+            if len(options) == 1:
+                bot.sendMessage(chat_id, "geef wel synoniemen op door woorden te splitten met |")
+                return
+            if not all(options): #one of the options is empty
+                bot.sendMessage(chat_id, "een van je gegeven opties is niet geldig (leeg)")
+                return
+            dataManager.add_alias(options, self.sender, msg['date'])
+            bot.sendMessage(chat_id, "deze dingen betekenen hetzelfde... got it!")
+            return
+                
+        if rawcommand.startswith("/showalias"):
+            s = prepare_query(rawcommand[11:])
+            if not s:
+                bot.sendMessage(chat_id, "type een query na /showalias en ik laat zien welke synoniemen ik hier van ken")
+                return
+            if not s in self.aliasdict:
+                bot.sendMessage(chat_id, "Deze query ken ik uberhaupt niet, misschien wil je me leren hoe ik er op moet reageren met /learn?")
+                return
+            i = self.aliasdict[s]
+            aliases = [i[0] for i in filter(lambda x: x[1] == i, self.aliasdict.items())]
+            if len(aliases) == 1:
+                bot.sendMessage(chat_id, "Het lijkt er op dat ik geen synoniemen van deze term ken, misschien wil je me er een paar leren met /alias?")
+                return
+            response = " | ".join(aliases) + "\n"
+            response += "Ik ken %d verschillende responses op deze queries" % len(self.userresponses[i])
+            bot.sendMessage(chat_id, response)
+            return
+
+        if rawcommand.startswith("/myaliases"):
+            r = dataManager.get_user_aliases(self.sender)
+            s = "Lijst van je geleerde aliases:"
+            for i, a in enumerate(r):
+                s += "\n%d.: %s" % (i, a)
+            lines = s.splitlines()
+            for i in range(0, len(lines), 15):
+                bot.sendMessage(chat_id, "\n".join(lines[i:i+15]))
+            return
+
+        if rawcommand.startswith("/deletealias"):
+            n = rawcommand[13:].strip()
+            if not n.isdigit():
+                bot.sendMessage(chat_id, "dat is geen geldig getal")
+                return
+            if dataManager.delete_alias(self.sender, int(n)):
+                self.load_files()
+                bot.sendMessage(chat_id, "Gelukt!")
+            else:
+                bot.sendMessage(chat_id, "hmm, iets ging mis. Check even of het getal daadwerkelijk klopt")
+            return
             
+            
+        
         if chat_id in self.silentchats:
             self.active = False
             return
@@ -235,14 +314,14 @@ class Henk(object):
         #now for the fun stuff :)
 
         #custom user commands
-        c = rawcommand.lower().strip().replace(", "," ").replace("?","")
-        if c in self.userresponses.keys():
+        c = prepare_query(rawcommand)
+        if c in self.aliasdict:
             t = msg['date']
             if t-self.lastupdate > 600:
                 self.update_querycounts(int((t-self.lastupdate)/3600))
                 self.lastupdate = t
             if self.react_to_query(c):
-                p = self.pick(self.userresponses[c])
+                p = self.pick(self.userresponses[self.aliasdict[c]])
                 try: p = p.replace("!name", msg['from']['first_name'])
                 except: pass
                 if p: bot.sendMessage(chat_id, p)
@@ -283,7 +362,7 @@ class Henk(object):
         #jokes
         val = startswith(command, self.commands["funny"])
         if val:
-            s = self.pick(["Sure: ", "oké. ", ""])
+            s = self.pick(["Sure: ", ""])
             if probaccept(0.5):
                 self.sendMessage(chat_id, s+self.pick(self.jokes))
             else:
@@ -338,14 +417,17 @@ class Henk(object):
         #random reactions
         if len(command)>10:
             if command[-5:].find("?")!=-1:
-                if command.find("hoeveel")!=-1 or command.find("hoe vaak")!=-1:
+                if command.find("hoeveel")!=-1 or command.find("hoe veel")!=-1 or command.find("hoe vaak")!=-1:
                     self.sendMessage(chat_id, self.pick(self.responses["question_amount"]))
                 elif command.find("waarom")!=-1:
                     self.sendMessage(chat_id, self.pick(self.responses["question_why"]))
-                elif command.find("wat vind")!=-1 or command.find("hoe denk")!=-1 or command.find("vind je")!=-1:
+                elif (command.find("wat vind")!=-1 or command.find("hoe denk")!=-1 or command.find("vind je")!=-1
+                    or command.find("wat is je mening")!=-1 or command.find("wat denk"):
                     self.sendMessage(chat_id, self.pick(self.responses["question_opinion"]))
                 elif command.find("wat ")!=-1:
                     self.sendMessage(chat_id, self.pick(self.responses["question_what"]))
+                elif command.find("waarvoor ")!=-1:
+                    self.sendMessage(chat_id, self.pick(self.responses["question_waarvoor"]))
                 elif command.find("waar ")!=-1:
                     self.sendMessage(chat_id, self.pick(self.responses["question_where"]))
                 elif command.find("hoe ")!=-1:
@@ -363,10 +445,13 @@ class Henk(object):
             if probaccept(0.05):
                 bot.sendMessage(chat_id, self.pick(self.openinglines))
                 return
-            elif probaccept(0.2):
+            elif probaccept(0.15):
                 bot.sendMessage(chat_id,self.pick(self.responses["negative_response"]))
+            elif probaccept(0.08):
+                r = random.randint(0,len(self.userresponses)-1) # this works because the keys of userresponses 
+                bot.sendMessage(chat_id, self.pick(self.userresponses[r])) #are consecutive integers
             return
-
+        
         self.active = False
 
 

@@ -40,8 +40,14 @@ Je kan me nieuwe responses aanleren.
 /learn <zin> -> <response1> | <response2> | ... | <responseN>
 Voorbeeld: /learn Henk, hoe gaat het met je? -> Goed hoor | Niet zo goed
 Voor meer informatie type /learnhelp
-/viewresponses - Laat je zien welke responses je mij allemaal aangeleerd hebt (je kan alleen maar je eigen responses zien)
-/delete n - Verwijdert response n (nummer zichtbaar bij /viewresponses)
+/myresponses - Laat je zien welke responses je mij allemaal aangeleerd hebt (je kan alleen maar je eigen responses zien)
+/deleteresponse n - Verwijdert response n (nummer zichtbaar bij /viewresponses)
+
+/alias <zin1> | <zin2> | ... | <zinN>
+Dit leert mij dat ik op zin1 tot en met zinN op dezelfde manier kan reageren (alleen exacte matches tellen)
+/myaliases - Zelfde als /myresponses maar dan voor aliases
+/deletealias n - zelfde als /deleteresponse n maar dan voor aliases
+/showalias <zin> - Laat zien welke aliases ik allemaal ken voor <zin>
 
 Doe dit in een privechat om mensen te verrassen met mijn nieuwe kennis :)
 
@@ -56,8 +62,9 @@ Dingen voor je berekenen: /calc <expression> """
 
 learnhelp = """
 /learn query -> response1 | response2 | ... | responseN
-query wordt gestript van hoofdletters, emojis, en als het eindigt op een vraagteken dat ook.
-Verder wordt ", " vervangen met " ".
+/myresponses
+/deleteresponse
+query wordt gestript van hoofdletters, vraagtekens, uitroeptekens en een punt op het einde van de query. Verder wordt ", " vervangen met " ".
 De responses mogen in principe alle soorten tekst bevatten die Telegram aankan en worden ook zo weergegeven.
 In de responses wordt !name vervangen met de naam van de afzender.
 
@@ -68,13 +75,14 @@ query mag niet een standaardresponse zijn (ik zeg het je als je dit probeert), h
 
 Je kan ook responses toevoegen aan speciale categorieen. Dit doe je door query te laten beginnen met $.
 Toegestane categorieën zijn: 
-$hi - begroetingen van Henk
+$hi - Hoe ik kan reageren op mensen die me begroeten
 $je_moeder - beschrijvingen van je moeder
 $wiki_failure - Wat ik kan zeggen als wikipedia niet mee werkt
 $math_error - Als ik dom ben
 $question_degree - Voor ja/nee vragen
 $question_amount - Voor hoeveelheden
 $question_opinion - Voor mijn mening
-$question_(why/what/where/how/when/who/which) - hopelijk vanzelfsprekend
+$question_(why/what/where/how/when/who/which/waarvoor) - hopelijk vanzelfsprekend
 $cuss_out - Wat ik kan zeggen als iemand me beledigt
+$negative_response - willekeurige negatieve dingen die ik soms zeg
 """

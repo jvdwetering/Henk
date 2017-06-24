@@ -49,7 +49,9 @@ class ManageData(object):
         self.messages = self.db['Messages']
         self.users = self.db['Users']
         self.commands = self.db['Commands']
+        self.aliases = self.db['Aliases']
         self.chats = self.db['Chats']
+        self.dummy = False
 
     def close(self):
         print(os.getcwd())
@@ -59,6 +61,7 @@ class ManageData(object):
         f.close()
 
     def write_message(self, msg):
+        if self.dummy: return
         d = {'chat_id': msg['chat']['id'], 'chat_type': msg['chat']['type'],
              'from_id': msg['from']['id'], 'from_name': msg['from']['first_name'],
              'time': msg['date'], 'text': msg['text']}
@@ -90,6 +93,7 @@ class ManageData(object):
         return (t, words[:10], topposters)
 
     def add_response(self, call, responses, user_id, time):
+        if self.dummy: return
         self.commands.insert({'user_id': user_id, 'call': call, 'response': " | ".join(responses), "time": time})
 
     def get_all_responses(self):
@@ -108,12 +112,33 @@ class ManageData(object):
         return [(c['call'], c['response']) for c in com]
 
     def delete_response(self, user, num):
+        if self.dummy: return
         res = self.get_user_responses(user)
-        if num > len(res): return False
+        if num >= len(res): return False
         self.commands.delete(user_id=user, call=res[num][0], response=res[num][1])
         return True
 
+    def add_alias(self, aliases, user_id, time):
+        if self.dummy: return
+        self.aliases.insert({'user_id': user_id, 'aliases': " | ".join(aliases), 'time': time})
+
+    def get_all_aliases(self):
+        com = self.aliases.all()
+        return [c['aliases'].split(" | ") for c in com]
+
+    def get_user_aliases(self, user):
+        com = self.aliases.find(user_id = user, order_by='time')
+        return [c['aliases'] for c in com]
+
+    def delete_alias(self, user, num):
+        if self.dummy: return
+        res = self.get_user_aliases(user)
+        if num >= len(res): return False
+        self.aliases.delete(user_id=user, aliases=res[num])
+        return True
+
     def set_silent_mode(self, chat_id, setsilent):
+        if self.dummy: return
         if self.chats.find_one(chat_id = chat_id):
             self.chats.update({"chat_id": chat_id, "silent":setsilent}, ['chat_id'])
         else:

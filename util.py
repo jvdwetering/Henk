@@ -17,6 +17,11 @@ def normalise(s): #"Hoi   bla" -> "hoi bla"
     r = " ".join(r.split())
     return r
 
+def prepare_query(s):
+    r = s.lower().strip().replace(", "," ").replace("?").replace("!")
+    if r.endswith("."): r = r[:-1]
+    return r.strip()
+
 def startswith(s,l):
     for i in l:
         if s.startswith(i):
