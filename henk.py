@@ -67,7 +67,7 @@ class Henk(object):
             else: #if not in the registered list
                 for s in synonyms: #register them as a new subset
                     self.aliasdict[s] = i
-                    i += 1
+                i += 1
 
         d = dataManager.get_all_responses()
         for k,v in list(d.items()):
