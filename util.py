@@ -18,7 +18,7 @@ def normalise(s): #"Hoi   bla" -> "hoi bla"
     return r
 
 def prepare_query(s):
-    r = s.lower().strip().replace(", "," ").replace("?").replace("!")
+    r = s.lower().strip().replace(", "," ").replace("?","").replace("!","")
     if r.endswith("."): r = r[:-1]
     return r.strip()
 
