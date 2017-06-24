@@ -63,10 +63,11 @@ class Henk(object):
                 if query in synonyms: #check if it is in this list
                     for s in synonyms: #and then register them as the same
                         self.aliasdict[s] = self.aliasdict[query]
-                else: #if not in the registered list
-                    for s in synonyms: #register them as a new subset
-                        self.aliasdict[s] = i
-                        i += 1
+                    break
+            else: #if not in the registered list
+                for s in synonyms: #register them as a new subset
+                    self.aliasdict[s] = i
+                    i += 1
 
         d = dataManager.get_all_responses()
         for k,v in list(d.items()):
@@ -262,6 +263,11 @@ class Henk(object):
                 bot.sendMessage(chat_id, "een van je gegeven opties is niet geldig (leeg)")
                 return
             dataManager.add_alias(options, self.sender, msg['date'])
+            for o in options:
+                if o in self.aliasdict:
+                    for oo in options:
+                        self.aliasdict[oo] = self.aliasdict[o]
+                    break #if they are not in the aliasdict then there are also no queries associated with it
             bot.sendMessage(chat_id, "deze dingen betekenen hetzelfde... got it!")
             return
                 
