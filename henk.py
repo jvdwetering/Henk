@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+# coding=latin-1
 '''
 Henkbot 2017
 Should be run in at least Python 3.5 (3.4 maybe works as well)
@@ -38,13 +40,13 @@ class Henk(object):
         self.active = False
 
     def load_files(self):
-        f = open("grappen.txt","r")
+        f = open("grappen.txt","r",encoding='latin-1')
         self.jokes = f.read().splitlines()
         f.close()
-        f = open("weetjes.txt","r")
+        f = open("weetjes.txt","r",encoding='latin-1')
         self.facts = f.read().splitlines()
         f.close()
-        f = open("zinnen.txt","r")
+        f = open("zinnen.txt","r",encoding='latin-1')
         self.openinglines = f.read().splitlines()
         f.close()
         f = open("commands.json","r")
@@ -210,8 +212,8 @@ class Henk(object):
             for i, d in enumerate(r):
                 s += "\n%d.: %s -> %s" % (i, d[0], d[1])
             lines = s.splitlines()
-            for i in range(0, len(lines), 20):
-                bot.sendMessage(chat_id, "\n".join(lines[i:i+20]))
+            for i in range(0, len(lines), 15):
+                bot.sendMessage(chat_id, "\n".join(lines[i:i+15]))
             return
 
         if rawcommand.startswith("/delete"):
@@ -358,10 +360,10 @@ class Henk(object):
                     self.sendMessage(chat_id, self.pick(self.responses["question_degree"]))
                 return
             self.active = False
-            if probaccept(0.5):
+            if probaccept(0.05):
                 bot.sendMessage(chat_id, self.pick(self.openinglines))
                 return
-            elif probaccept(0.5):
+            elif probaccept(0.2):
                 bot.sendMessage(chat_id,self.pick(self.responses["negative_response"]))
             return
 

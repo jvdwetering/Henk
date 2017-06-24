@@ -11,7 +11,7 @@ try:
     f = open("password.txt", "r")
 except:
     raise Exception("Password file not found")
-password = f.read()
+password = f.read().strip()
 f.close()
 
 def encrypt():
