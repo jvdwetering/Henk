@@ -368,21 +368,18 @@ class Henk(object):
         #jokes
         val = startswith(command, self.commands["funny"])
         if val:
-            s = self.pick(["Sure: ", ""])
-            if probaccept(0.5):
-                self.sendMessage(chat_id, s+self.pick(self.jokes))
-            else:
-                self.sendMessage(chat_id,self.pick(self.facts))
+            self.sendMessage(chat_id, self.pick(self.jokes))
             return
 
         #facts
         val = startswith(command, self.commands["amuse"])
         if val:
-            if probaccept(0.5):
+            if probaccept(0.7):
                 self.sendMessage(chat_id,self.pick(self.facts))
-            else:
+            elif probaccept(0.5):
                 s = get_wikipedia.random_wiki_text()
                 if s: self.sendMessage(chat_id,s)
+            else: self.sendMessage(chat_id, self.pick(self.jokes))
             return
 
         #spam check
