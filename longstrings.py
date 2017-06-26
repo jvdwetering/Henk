@@ -41,7 +41,7 @@ Je kan me nieuwe responses aanleren.
 Voorbeeld: /learn Henk, hoe gaat het met je? -> Goed hoor | Niet zo goed
 Voor meer informatie type /learnhelp
 /myresponses - Laat je zien welke responses je mij allemaal aangeleerd hebt (je kan alleen maar je eigen responses zien)
-/deleteresponse n - Verwijdert response n (nummer zichtbaar bij /viewresponses)
+/deleteresponse n - Verwijdert response n (nummer zichtbaar bij /myresponses)
 
 /alias <zin1> | <zin2> | ... | <zinN>
 Dit leert mij dat ik op zin1 tot en met zinN op dezelfde manier kan reageren (alleen exacte matches tellen)

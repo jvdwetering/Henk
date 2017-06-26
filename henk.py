@@ -323,8 +323,8 @@ class Henk(object):
         c = prepare_query(rawcommand)
         if c in self.aliasdict:
             t = msg['date']
-            if t-self.lastupdate > 600:
-                self.update_querycounts(int((t-self.lastupdate)/3600))
+            if t-self.lastupdate > 1800:
+                self.update_querycounts(int((t-self.lastupdate)/1800))
                 self.lastupdate = t
             if self.react_to_query(c):
                 p = self.pick(self.userresponses[self.aliasdict[c]])
@@ -419,8 +419,16 @@ class Henk(object):
                     self.sendMessage(chat_id, self.pick(self.responses["wiki_failure"]))
                 else: self.sendMessage(chat_id, self.pick(self.responses["negative_response"]))
             return
+
+        #haha... kont
+        if command.find("kont")!=-1:
+            self.sendMessage(chat_id, "Hahaha, je zei kont")
+            return
+        if command.find("cont")!=-1:
+            self.sendMessage(chat_id, "Hahaha, je zei cont")
+            return
         
-        #random reactions
+        #questions and other random reactions
         if len(command)>10:
             if command[-5:].find("?")!=-1:
                 if command.find("hoeveel")!=-1 or command.find("hoe veel")!=-1 or command.find("hoe vaak")!=-1:
