@@ -198,7 +198,9 @@ class Henk(object):
             r = dataManager.get_all_responses()
             c = len(r)
             d = sum([len(i) for i in r.values()])
-            bot.sendMessage(chat_id, "Ik ken %d custom queries, en heb daar in totaal %d responses op" % (c,d))
+            a = dataManager.get_all_aliases()
+            aa = sum([len(i) for i in a])
+            bot.sendMessage(chat_id, "Ik ken %d custom queries, en heb daar in totaal %d responses op. Verder ken ik %d aliases" % (c,d, aa))
             return
 
         if rawcommand.startswith("/learn"):

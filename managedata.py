@@ -87,10 +87,10 @@ class ManageData(object):
             totaltext += "\n" + m['text']
         #ratio = len(zlib.compress(totaltext.encode(),level=9))/len(totaltext)
         words = dict(TextBlob(totaltext).word_counts)
-        words = filter(lambda x: len(x[0])>2 and x[0] not in wordfilterlist, words.items())
+        words = filter(lambda x: len(x[0])>3 and x[0] not in wordfilterlist, words.items())
         words = [i[0] for i in sorted(words, key=lambda x: x[1], reverse=True)]
         topposters = sorted(count.items(), key=lambda x: x[1], reverse=True)[:3]
-        return (t, words[:10], topposters)
+        return (t, words[:15], topposters)
 
     def add_response(self, call, responses, user_id, time):
         if self.dummy: return
