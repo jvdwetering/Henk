@@ -27,11 +27,16 @@ PPA = -6722364 #hardcoded label for party pownies
 PPA = -218118195 #Henk's fun palace
 
 wordfilterlist = [
-    "dat", "wel", "het", "hoi", "jij",
-    "wil", "dit", "komt", "als", "kan", "ook", "bij"
-    "omdat", "een", "wat", "niet", "met", "eens", "moet",
-    "van", "ben", "heb", "voor", "henk", "welke", "hoe", "waarom",
-    "die", "vind", "dan", "zijn", "zou", "hij", "aan", "nog"]
+    "komt", "omdat", "niet", "eens", "moet", "maar", "learn", "viewresponses",
+    "gaan", "nice", "doen", "heeft", "iets","over", "naar", "veel", "daar",
+    "voor", "henk", "welke", "waarom", "vind", "zijn", "echt", "mijn", "delete",
+    "gaat", "goed", "denk", "meer", "bent", "waar", "weer", "toch", "even"]
+
+def is_word_relevant(word):
+    if len(word) < 4: return False
+    if word.isdigit(): return False
+    if word in wordfilterlist: return False
+    return True
 
 class ManageData(object):
     def __init__(self):
@@ -54,6 +59,8 @@ class ManageData(object):
         self.polls = self.db['Polls']
         self.dummy = False
 
+        self.alltext = "\n".join(i['text'] for i in self.messages.all())
+
     def close(self):
         print(os.getcwd())
         encrypt()
@@ -66,6 +73,7 @@ class ManageData(object):
         d = {'chat_id': msg['chat']['id'], 'chat_type': msg['chat']['type'],
              'from_id': msg['from']['id'], 'from_name': msg['from']['first_name'],
              'time': msg['date'], 'text': msg['text']}
+        self.alltext += "\n" + d['text']
         self.messages.insert(d)
 
     def latest_messages(self, chat_id, hours=3):
@@ -86,12 +94,13 @@ class ManageData(object):
             else: count[i] = 1
             t += 1
             totaltext += "\n" + m['text']
-        #ratio = len(zlib.compress(totaltext.encode(),level=9))/len(totaltext)
-        words = dict(TextBlob(totaltext).word_counts)
-        words = filter(lambda x: len(x[0])>3 and x[0] not in wordfilterlist, words.items())
+        b1 = TextBlob(totaltext)
+        words = dict(b1.word_counts)
+        words = filter(lambda x: is_word_relevant(x[0]), words.items())
         words = [i[0] for i in sorted(words, key=lambda x: x[1], reverse=True)]
         topposters = sorted(count.items(), key=lambda x: x[1], reverse=True)[:3]
-        return (t, words[:15], topposters)
+        char_words = [d[0] for d in top_words(b1, TextBlob(self.alltext))]
+        return (t, words[:10], topposters, char_words[:10])
 
     def add_response(self, call, responses, user_id, time):
         if self.dummy: return
@@ -177,7 +186,8 @@ def comp_freq(word, blob1, blob2):
     return tf(word,blob1)/tf(word,blob2)
 
 def top_words(blob1,blob2):
-    return sorted(blob1.words, key=lambda x: comp_freq(x,blob1,blob2),reverse=True)
+    l = [(w,blob1.word_counts[w]/(1+blob2.word_counts[w])) for w in blob1.word_counts if blob1.word_counts[w]>3 and is_word_relevant(w)]
+    return sorted(l, key=lambda x: x[1],reverse=True)
 
 if __name__ == '__main__':
     m = ManageData()

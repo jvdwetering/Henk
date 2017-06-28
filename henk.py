@@ -13,6 +13,8 @@ import random
 import json
 import urllib3
 
+import difflib
+
 import simpleeval #for evaluating math expressions
 simpleeval.MAX_POWER=1000
 import telepot
@@ -309,12 +311,20 @@ class Henk(object):
                 bot.sendMessage(chat_id, "type een query na /showalias en ik laat zien welke synoniemen ik hier van ken")
                 return
             if not s in self.aliasdict:
-                bot.sendMessage(chat_id, "Deze query ken ik uberhaupt niet, misschien wil je me leren hoe ik er op moet reageren met /learn?")
+                options = difflib.get_close_matches(s,self.aliasdict.keys())
+                if not options:
+                    bot.sendMessage(chat_id, "Deze query ken ik uberhaupt niet, misschien wil je me leren hoe ik er op moet reageren met /learn?")
+                else:
+                    bot.sendMessage(chat_id, "Ik ken deze niet, maar het lijkt wel op deze die ik wel ken: \n%s" % "\n".join(options))
                 return
             i = self.aliasdict[s]
             aliases = [i[0] for i in filter(lambda x: x[1] == i, self.aliasdict.items())]
             if len(aliases) == 1:
-                bot.sendMessage(chat_id, "Het lijkt er op dat ik geen synoniemen van deze term ken, misschien wil je me er een paar leren met /alias?")
+                options = difflib.get_close_matches(s,self.aliasdict.keys())
+                if not options:
+                    bot.sendMessage(chat_id, "Het lijkt er op dat ik geen synoniemen van deze term ken, misschien wil je me er een paar leren met /alias?")
+                else:
+                    bot.sendMessage(chat_id, "Ik ken geen synoniemen van deze term, maar hij lijkt wel veel op deze: \n%s\nIs ie gelijk aan een van deze?" % "\n".join(options))
                 return
             response = " | ".join(aliases) + "\n"
             response += "Ik ken %d verschillende responses op deze queries" % len(self.userresponses[i])
@@ -473,10 +483,10 @@ class Henk(object):
                     self.sendMessage(chat_id, self.pick(self.responses["question_waarvoor"]))
                 elif command.find("waar ")!=-1:
                     self.sendMessage(chat_id, self.pick(self.responses["question_where"]))
+                elif command.find("wanneer")!=-1 or command.find("hoe laat")!=-1:
+                    self.sendMessage(chat_id, self.pick(self.responses["question_when"]))
                 elif command.find("hoe ")!=-1:
                     self.sendMessage(chat_id, self.pick(self.responses["question_how"]))
-                elif command.find("wanneer")!=-1:
-                    self.sendMessage(chat_id, self.pick(self.responses["question_when"]))
                 elif command.find("welk")!=-1:
                     self.sendMessage(chat_id, self.pick(self.responses["question_which"]))
                 elif command.find("wie")!=-1:
@@ -559,7 +569,7 @@ class Henk(object):
             return "computer says no"
 
     def response_stats(self, chat_id):
-        total, topwords, p = dataManager.spam_stats(chat_id,hours=6)
+        total, topwords, p, char = dataManager.spam_stats(chat_id,hours=6)
         s = "Er zijn %d berichten verstuurd in de afgelopen 6 uur" % total
         s += "\nHardste spammers: "
         for i in range(min([len(p),3])):
@@ -567,6 +577,7 @@ class Henk(object):
             name = bot.getChatMember(chat_id, n)['user']['first_name']
             s += name + " (%d) " % c
         s += "\nMeest voorkomende woorden: %s" % ", ".join(topwords)
+        s += "\nKarakteristieke woorden: %s" % ", ".join(char)
         return s
 
 
