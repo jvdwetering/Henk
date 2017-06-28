@@ -51,6 +51,7 @@ class ManageData(object):
         self.commands = self.db['Commands']
         self.aliases = self.db['Aliases']
         self.chats = self.db['Chats']
+        self.polls = self.db['Polls']
         self.dummy = False
 
     def close(self):
@@ -136,6 +137,17 @@ class ManageData(object):
         if num >= len(res): return False
         self.aliases.delete(user_id=user, aliases=res[num])
         return True
+
+    def add_poll(self, chat_id, mess_id, poll_id, text, votes):
+        if self.dummy: return
+        d = {'chat_id': chat_id, 'mess_id': mess_id, 'poll_id': poll_id, 'text': text, 'votes': votes}
+        if self.polls.find_one(chat_id=chat_id,mess_id=mess_id):
+            self.polls.update(d, ['chat_id', 'mess_id'])
+        else:
+            self.polls.insert(d)
+
+    def get_all_polls(self):
+        return self.polls.find(order_by='poll_id')
 
     def set_silent_mode(self, chat_id, setsilent):
         if self.dummy: return

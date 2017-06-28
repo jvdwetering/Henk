@@ -33,11 +33,13 @@ math_functions = {"sin": math.sin, "cos": math.cos, "sqrt": math.sqrt, "ln": mat
 
 class Henk(object):
     def __init__(self):
-        self.load_files()
-
         self.querycounts = {}
         self.lastupdate = 0
         self.active = False
+        self.polls = []
+        self.pollvotes = []
+
+        self.load_files()
 
     def load_files(self):
         f = open("grappen.txt","r",encoding='latin-1')
@@ -85,6 +87,12 @@ class Henk(object):
                 self.aliasdict[query] = i
                 self.userresponses[i] = d[query]
                 i += 1
+
+        d = dataManager.get_all_polls()
+        for p in d:
+            t = p['text'].split('|')
+            self.polls.append(((p['chat_id'],p['mess_id']),t[0].strip(),t[1:]))
+            self.pollvotes.append(json.loads(p['votes']))
         
         self.silentchats = dataManager.get_silent_chats()
 
@@ -203,6 +211,28 @@ class Henk(object):
             bot.sendMessage(chat_id, "Ik ken %d custom queries, en heb daar in totaal %d responses op. Verder ken ik %d aliases" % (c,d, aa))
             return
 
+        if rawcommand.startswith("/poll"):
+            text = rawcommand[6:]
+            d = text.split("|")
+            if len(d) == 1:
+                options = [u"\u2764", u"\U0001F4A9"] #heart and poop
+            elif len(d)>6:
+                bot.sendMessage(chat_id, "Zoveel opties... omg, dat kan ik echt niet aan")
+                return
+            else:
+                options = [i.strip()[:15] for i in d[1:]]
+            query = d[0].strip()
+            buttons = []
+            for i,o in enumerate(options):
+                buttons.append(InlineKeyboardButton(text=o,callback_data="poll%d:%d" % (len(self.polls),i)))
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[buttons])
+            sent = bot.sendMessage(chat_id, "Poll: %s" % query, reply_markup=keyboard)
+            ident = telepot.message_identifier(sent)
+            dataManager.add_poll(ident[0],ident[1],len(self.polls),query+"|"+"|".join(options),"{}")
+            self.polls.append((ident, query, options))
+            self.pollvotes.append({})
+            
+        #All the learning commands
         if rawcommand.startswith("/learn"):
             if rawcommand.find("->") == -1:
                 bot.sendMessage(chat_id, "ik mis een '->' om aan te geven hoe de argumenten gescheiden zijn")
@@ -471,7 +501,28 @@ class Henk(object):
     def on_callback_query(self, msg):
         query_id, from_id, data = telepot.glance(msg, flavor='callback_query')
         print('Callback query:', query_id, from_id, data)
+        if not data.startswith("poll"):
+            return
+        poll, option = data[4:].split(":")
+        poll = int(poll)
+        option = int(option)
+        if str(from_id) in self.pollvotes[poll] and self.pollvotes[poll][str(from_id)] == option: return
+        self.pollvotes[poll][str(from_id)] = option
 
+        p = self.polls[poll]
+        dataManager.add_poll(p[0][0],p[0][1], poll, p[1]+"|"+"|".join(p[2]), json.dumps(self.pollvotes[poll]))
+        
+        editor = telepot.helper.Editor(bot, self.polls[poll][0])
+        buttons = []
+        for i,o in enumerate(self.polls[poll][2]):
+            c = sum(1 for k,v in self.pollvotes[poll].items() if v==i)
+            if c == 0: s = o
+            else: s = "%s %d" % (o, c)
+            buttons.append(InlineKeyboardButton(text=s,callback_data="poll%d:%d" % (poll,i)))
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[buttons])
+        editor.editMessageReplyMarkup(reply_markup=keyboard)
+        bot.answerCallbackQuery(query_id, text="Je hebt gestemd op " + p[2][option])
+        return
 
     def on_inline_query(self, msg):
         def compute():
