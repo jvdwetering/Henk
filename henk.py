@@ -307,27 +307,31 @@ class Henk(object):
                 
         if rawcommand.startswith("/showalias"):
             s = prepare_query(rawcommand[11:])
+            l = list(self.aliasdict.keys())
+            if s in l: l.remove(s)
             if not s:
                 bot.sendMessage(chat_id, "type een query na /showalias en ik laat zien welke synoniemen ik hier van ken")
                 return
             if not s in self.aliasdict:
-                options = difflib.get_close_matches(s,self.aliasdict.keys())
+                options = difflib.get_close_matches(s,l)
                 if not options:
                     bot.sendMessage(chat_id, "Deze query ken ik uberhaupt niet, misschien wil je me leren hoe ik er op moet reageren met /learn?")
                 else:
                     bot.sendMessage(chat_id, "Ik ken deze niet, maar het lijkt wel op deze die ik wel ken: \n%s" % "\n".join(options))
                 return
             i = self.aliasdict[s]
-            aliases = [i[0] for i in filter(lambda x: x[1] == i, self.aliasdict.items())]
+            aliases = [j[0] for j in filter(lambda x: x[1] == i, self.aliasdict.items())]
+            count = len(self.userresponses[i])
+            response = "Ik ken %d verschillende responses op deze query\n" % count
             if len(aliases) == 1:
-                options = difflib.get_close_matches(s,self.aliasdict.keys())
+                options = difflib.get_close_matches(s,l)
                 if not options:
-                    bot.sendMessage(chat_id, "Het lijkt er op dat ik geen synoniemen van deze term ken, misschien wil je me er een paar leren met /alias?")
+                    response += "Het lijkt er op dat ik geen synoniemen van deze term ken, misschien wil je me er een paar leren met /alias?"
                 else:
-                    bot.sendMessage(chat_id, "Ik ken geen synoniemen van deze term, maar hij lijkt wel veel op deze: \n%s\nIs ie gelijk aan een van deze?" % "\n".join(options))
-                return
-            response = " | ".join(aliases) + "\n"
-            response += "Ik ken %d verschillende responses op deze queries" % len(self.userresponses[i])
+                    response += "Ik ken geen synoniemen van deze term, maar hij lijkt wel veel op deze: \n%s\nIs ie gelijk aan een van deze?" % "\n".join(options)
+            else:
+                response += " | ".join(aliases)
+            
             bot.sendMessage(chat_id, response)
             return
 
