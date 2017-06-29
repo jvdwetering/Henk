@@ -27,10 +27,10 @@ PPA = -6722364 #hardcoded label for party pownies
 PPA = -218118195 #Henk's fun palace
 
 wordfilterlist = [
-    "komt", "omdat", "niet", "eens", "moet", "maar", "learn", "viewresponses",
-    "gaan", "nice", "doen", "heeft", "iets","over", "naar", "veel", "daar",
-    "voor", "henk", "welke", "waarom", "vind", "zijn", "echt", "mijn", "delete",
-    "gaat", "goed", "denk", "meer", "bent", "waar", "weer", "toch", "even"]
+    "komt", "omdat", "niet", "eens", "moet", "maar", "learn", "viewresponses","showalias",
+    "gaan", "nice", "doen", "heeft", "iets","over", "naar", "veel", "daar","alias","myresponses",
+    "voor", "henk", "welke", "waarom", "vind", "zijn", "echt", "mijn", "delete","myaliases","deleteresponse",
+    "gaat", "goed", "denk", "meer", "bent", "waar", "weer", "toch", "even", "stats"]
 
 def is_word_relevant(word):
     if len(word) < 4: return False

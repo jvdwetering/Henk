@@ -370,8 +370,7 @@ class Henk(object):
                 self.lastupdate = t
             if self.react_to_query(c):
                 p = self.pick(self.userresponses[self.aliasdict[c]])
-                try: p = p.replace("!name", msg['from']['first_name'])
-                except: pass
+                p = p.replace("!name", self.sendername)
                 if p: bot.sendMessage(chat_id, p)
                 return
             
@@ -458,6 +457,16 @@ class Henk(object):
                     self.sendMessage(chat_id, self.pick(self.responses["wiki_failure"]))
                 else: self.sendMessage(chat_id, self.pick(self.responses["negative_response"]))
             return
+
+        #try approximate custom matches
+        options = difflib.get_close_matches(command,self.aliasdict.keys(),n=1,cutoff=0.9)
+        if not options: options = difflib.get_close_matches(prepare_query(rawcommand),self.aliasdict.keys(),n=1,cutoff=0.9)
+        if options:
+            if self.react_to_query(options[0]):
+                p = self.pick(self.userresponses[self.aliasdict[options[0]]])
+                p = p.replace("!name", self.sendername)
+                if p: bot.sendMessage(chat_id, p)
+                return
 
         #haha... kont
         if command.find("kont")!=-1:

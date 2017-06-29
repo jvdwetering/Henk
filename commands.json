@@ -1,6 +1,6 @@
 {
     "commands" : {
-        "introductions": ["hey henk","hey, henk", "hoi henk", "hoi, henk", "sup henk",
+        "introductions": ["hey henk", "hoi henk", "hi henk", "sup henk", "goedemorgen henk",
             "heey henk","hallo henk", "goedemorgen henk", "henk", "ha henk", 
             "goedemiddag henk", "goedenavond henk", "wazzap henk", "yo henk"],
         "funny": ["vertel eens een grap", "vertel eens iets leuk","zeg eens iets grappig", 
