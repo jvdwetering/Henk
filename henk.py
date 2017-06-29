@@ -428,15 +428,17 @@ class Henk(object):
             return
         
         #questions and other random reactions
-        if len(command)>10:
-            if command[-5:].find("?")!=-1:
-                if command.find("hoeveel")!=-1 or command.find("hoe veel")!=-1 or command.find("hoe vaak")!=-1:
+        if len(command)>6:
+            if command[-5:].find("?")!=-1 or command[-5:].find("/")!=-1 or command[-5:].find(">")!=-1: #? and common misspellings
+                if (command.find("wat vind")!=-1 or command.find("hoe denk")!=-1 or command.find("vind je")!=-1
+                    or command.find("wat is je mening")!=-1 or command.find("wat denk")!=-1):
+                    self.sendMessage(chat_id, self.pick(self.responses["question_opinion"]))
+                elif startswith(command, ["heb","ben ","zijn ","was ","waren ","is ","ga","zal ","moet "]):
+                    self.sendMessage(chat_id, self.pick(self.responses["question_degree"]))
+                elif command.find("hoeveel")!=-1 or command.find("hoe veel")!=-1 or command.find("hoe vaak")!=-1:
                     self.sendMessage(chat_id, self.pick(self.responses["question_amount"]))
                 elif command.find("waarom")!=-1:
                     self.sendMessage(chat_id, self.pick(self.responses["question_why"]))
-                elif (command.find("wat vind")!=-1 or command.find("hoe denk")!=-1 or command.find("vind je")!=-1
-                    or command.find("wat is je mening")!=-1 or command.find("wat denk")!=-1):
-                    self.sendMessage(chat_id, self.pick(self.responses["question_opinion"]))
                 elif command.find("wat ")!=-1:
                     self.sendMessage(chat_id, self.pick(self.responses["question_what"]))
                 elif command.find("waarvoor ")!=-1:
@@ -451,7 +453,7 @@ class Henk(object):
                     self.sendMessage(chat_id, self.pick(self.responses["question_which"]))
                 elif command.find("wie")!=-1:
                     self.sendMessage(chat_id, self.pick(self.responses["question_who"]))
-                else:
+                else: #yes/no question
                     self.sendMessage(chat_id, self.pick(self.responses["question_degree"]))
                 return
             self.active = False
