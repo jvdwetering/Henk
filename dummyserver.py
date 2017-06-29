@@ -12,6 +12,9 @@ class Bot(object):
     def sendMessage(self, chat_id, message):
         print(message)
 
+    def getChatMember(self, chat_id, num):
+        return {'user': {'first_name': 'iemand'}}
+
 def dummy_glance(msg):
     return ('text', 'group', ADMIN)
 

@@ -1,6 +1,6 @@
 {
     "commands" : {
-        "introductions": ["hey henk","hey, henk", "hoi henk", "hoi, henk", "sup henk",
+        "introductions": ["hey henk", "hoi henk", "hi henk", "sup henk", "goedemorgen henk",
             "heey henk","hallo henk", "goedemorgen henk", "henk", "ha henk", 
             "goedemiddag henk", "goedenavond henk", "wazzap henk", "yo henk"],
         "funny": ["vertel eens een grap", "vertel eens iets leuk","zeg eens iets grappig", 
@@ -74,7 +74,7 @@
             "In de gaskamer", "In een doodskist", "In een pakje Verkade-koekjes", 
             "verstopt in een andere dimensie", "in iemands anus", "op de vuilnisbelt",
 "in Neverland"],
-        "question_how": ["Met een regenpijp", "Hard", "vaak", "driemaal op rij", "liefdevol",
+        "question_how": ["Met een regenpijp", "Hard", "vaak", "op een liefdevolle manier",
             "verkleed als een non", "met passie", "met tegenzin", "het liefst nooit", 
             "erin en eruit", "met de intensiteit van een duizend zonnen", 
             "met je broek uit, op je hoofd", "Door mijn werkcolleges braaf te maken", "Gewoon, niet."],
