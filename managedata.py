@@ -189,6 +189,74 @@ def top_words(blob1,blob2):
     l = [(w,blob1.word_counts[w]/(1+blob2.word_counts[w])) for w in blob1.word_counts if blob1.word_counts[w]>3 and is_word_relevant(w)]
     return sorted(l, key=lambda x: x[1],reverse=True)
 
+from unidecode import unidecode
+
+translate_name = {
+    "@john": "John",
+    "@jvdwetering": "John",
+    "@memecardsbot": "Henk",
+    "@olafz": "Olaf",
+    "@DanyTargaryen": "Margot",
+    "@jesper216": "Jesper",
+    "@vetkat": "Mark",
+    "@mark": "Mark",
+    "@Alucen": "Alex",
+    "@koemanmike": "Mike",
+    "@riiik": "Rik",
+    "@rik": "Rik"
+    }
+
+def cleanup_msg(text):
+    t = unidecode(str(text))
+    #for c in r"+-_;{}[](),.!|\&?/%:<>=#*~^`$":
+    #    t = t.replace(c," ")
+    #t = t.replace("'",'"')
+    #for c in "0123456789":
+    #    t = t.replace(c,"#")
+    if t.startswith("/"):
+        return ""
+    for k,v in translate_name.items(): #"filter out @callsigns"
+        t = t.replace(k,v)
+    while t.find("http")!=-1: #filter out urls
+        i = t.find("http")
+        j = t.find(" ",i)
+        if j==-1: t = t[:i]
+        else: t = t[:i] + t[j:]
+    t = t.strip()
+    t = "\n".join([" ".join(line.split()) for line in t.split("\n")]) #normalise spaces
+    return t
+
+def linesplit(line, sep):
+    #linesplit("Even testen of dit werkt\nWerkt het??\n Misschien wel", ["\n","?"])
+    # = ['Even testen of dit werkt', 'Werkt het?', 'Misschien wel']
+    l = [line]
+    for s in sep:
+        l2 = []
+        for i in l:
+            splits = i.split(s)
+            for i in range(len(splits)-1): splits[i] += s
+            l2.extend(j.strip() for j in splits if len(j.strip())>1)
+        l = l2
+    return l
+
+def prepare_pownies_text(m):
+    msgs = [i['text'] for i in m.messages.find(chat_id = -6722364)]
+    print(len(msgs), "amount of messages")
+    texts = []
+    for t in list(filter(lambda x: x!="", [cleanup_msg(msg) for msg in msgs])):
+        l = linesplit(t, ["\n","? ",". ", "! "])
+        texts.extend(l)
+
+    print("Split into", len(texts), "amount of lines")
+    b = [i for i in texts if any(i.find(name)!=-1 for name in translate_name.values())]
+    print(len(b), "contain names")
+    c = [i for i in texts if any(i.find(d)!=-1 for d in "0123456789")]
+    print(len(c), "contain a number")
+    return texts
+
+
+    
+
 if __name__ == '__main__':
     m = ManageData()
     data = m.db['Messages'].all()

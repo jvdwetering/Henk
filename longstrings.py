@@ -51,7 +51,7 @@ Dit leert mij dat ik op zin1 tot en met zinN op dezelfde manier kan reageren (al
 
 Doe dit in een privechat om mensen te verrassen met mijn nieuwe kennis :)
 
-Naast dit alles probeer ik te reageren om andere vragen die je me stelt ;)"""
+Naast dit alles probeer ik te reageren op andere vragen die je me stelt ;)"""
 
 helpsilent = """Ik sta momenteel op stil (/setsilent 1), dit betekent dat alleen mijn saaie commando's werken.
 Om alles te activeren zet /setsilent 0

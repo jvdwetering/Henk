@@ -25,6 +25,7 @@ from telepot.namedtuple import InlineQueryResultArticle, InlineQueryResultPhoto,
 
 import get_wikipedia
 from managedata import ManageData
+from buienradar import weather_report
 import longstrings
 from util import get_current_hour, normalise, prepare_query, startswith, probaccept
 
@@ -193,6 +194,9 @@ class Henk(object):
             if res: bot.sendMessage(chat_id, res)
             else: bot.sendMessage(chat_id, "sorry, dat lukt me niet :(")
             return
+
+        if rawcommand.startswith("/weather"):
+            bot.sendMessage(chat_id, weather_report())
 
         if rawcommand.startswith("/calc"):
             text = rawcommand[6:]
@@ -369,7 +373,7 @@ class Henk(object):
         c = prepare_query(rawcommand)
         if c in self.aliasdict:
             t = msg['date']
-            if t-self.lastupdate > 1800:
+            if t-self.lastupdate > 1800: #every half hour update my willingness to say stuff
                 self.update_querycounts(int((t-self.lastupdate)/1800))
                 self.lastupdate = t
             if self.react_to_query(c):
@@ -414,6 +418,12 @@ class Henk(object):
         val = startswith(command, self.commands["funny"])
         if val:
             self.sendMessage(chat_id, self.pick(self.jokes))
+            return
+
+        #weather
+        val = startswith(command, self.commands["weather"])
+        if val:
+            self.sendMessage(chat_id, weather_report())
             return
 
         #facts
