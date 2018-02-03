@@ -26,6 +26,7 @@ from telepot.namedtuple import InlineQueryResultArticle, InlineQueryResultPhoto,
 import get_wikipedia
 from managedata import ManageData
 from buienradar import weather_report
+import reftermenu
 import longstrings
 from util import get_current_hour, normalise, prepare_query, startswith, probaccept
 
@@ -197,6 +198,9 @@ class Henk(object):
 
         if rawcommand.startswith("/weather"):
             bot.sendMessage(chat_id, weather_report())
+
+        if rawcommand.startswith("/refter"):
+            bot.sendMessage(chat_id, reftermenu.get_todays_menu())
 
         if rawcommand.startswith("/calc"):
             text = rawcommand[6:]
@@ -424,6 +428,11 @@ class Henk(object):
         val = startswith(command, self.commands["weather"])
         if val:
             self.sendMessage(chat_id, weather_report())
+            return
+
+        #refter menu
+        if command.find("refter")!=-1:
+            self.sendMessage(chat_id, reftermenu.get_todays_menu())
             return
 
         #facts

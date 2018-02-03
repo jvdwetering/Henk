@@ -33,6 +33,12 @@ Dingen voor je berekenen: /calc <expression>
 "bereken <stuff>", "hoeveel is <stuff>"
 Bijvoorbeeld: Henk, bereken 38*3^(5+ln(sin(pi/2)))
 
+Een weerbericht geven: /weather
+"Henk, wat voor weer wordt het?"
+
+Het menu van de Refter voor vandaag ophalen: /refter
+"Henk, wat heeft de Refter vandaag?"
+
 Informatie geven over berichten stats: /stats
 "Henk, hoeveel berichten zijn er?", "Hey Henk, wie hebben er gespamd?"
 
