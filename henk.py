@@ -101,9 +101,10 @@ class Henk(object):
         self.silentchats = dataManager.get_silent_chats()
 
     def sendMessage(self, chat_id, s):
-        bot.sendMessage(chat_id, s)
+        m = bot.sendMessage(chat_id, s)
         if probaccept(0.7): self.active = True
         else: self.active = False
+        return m
 
     def pick(self, options):
         return random.sample(options,1)[0].replace("!name", self.sendername)
@@ -208,8 +209,10 @@ class Henk(object):
             return
 
         if rawcommand.startswith("/stats"):
+            m = self.sendMessage(chat_id, "effe tellen")
             text = self.response_stats(chat_id)
-            bot.sendMessage(chat_id, text)
+            bot.editMessageText(telepot.message_identifier(m), text)
+            #bot.sendMessage(chat_id, text)
             return
 
         if rawcommand.startswith("/learnstats"):
@@ -448,8 +451,10 @@ class Henk(object):
 
         #spam check
         if startswith(command, self.commands["spam_ask"]):
-            s = self.response_stats(chat_id)
-            self.sendMessage(chat_id, s)
+            m = self.sendMessage(chat_id, "effe tellen")
+            text = self.response_stats(chat_id)
+            bot.editMessageText(telepot.message_identifier(m), text)
+            #bot.sendMessage(chat_id, text)
             return
         if startswith(command, self.commands["spam_react"]):
             self.sendMessage(chat_id, "spam"*random.randint(3,15))
