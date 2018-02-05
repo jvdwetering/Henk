@@ -11,7 +11,7 @@ remove_emoji = re.compile(u'['
      u'\u2600-\u26FF\u2700-\u27BF]+', 
      re.UNICODE)
 
-def normalise(s): #"Hoi   bla" -> "hoi bla"
+def normalise(s): #" Hoi   bla" -> "hoi bla"
     r = s.lower().strip()
     r = remove_emoji.sub('', r)
     r = " ".join(r.split())

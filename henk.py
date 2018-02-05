@@ -26,6 +26,7 @@ from telepot.namedtuple import InlineQueryResultArticle, InlineQueryResultPhoto,
 import get_wikipedia
 from managedata import ManageData
 from buienradar import weather_report
+from entertainment import Entertainment
 import reftermenu
 import longstrings
 from util import get_current_hour, normalise, prepare_query, startswith, probaccept
@@ -40,21 +41,16 @@ class Henk(object):
         self.querycounts = {}
         self.lastupdate = 0
         self.active = False
+        self.entertainment = Entertainment()
+        self.morning_message_timer = 0
+
         self.polls = []
         self.pollvotes = []
 
         self.load_files()
 
     def load_files(self):
-        f = open("grappen.txt","r",encoding='latin-1')
-        self.jokes = f.read().splitlines()
-        f.close()
-        f = open("weetjes.txt","r",encoding='latin-1')
-        self.facts = f.read().splitlines()
-        f.close()
-        f = open("zinnen.txt","r",encoding='latin-1')
-        self.openinglines = f.read().splitlines()
-        f.close()
+        self.entertainment.load()
         f = open("commands.json","r")
         d = json.load(f) #dictionary of lists of variations of commands and responses
         f.close()
@@ -122,6 +118,25 @@ class Henk(object):
             self.active = True
             return True
         return False
+
+    def morning_message(self,chat_id, msg):
+        if probaccept(0.3):
+            if msg.startswith('/') and msg.find('morgen')!=-1:
+                self.sendMessage(chat_id, msg)
+            elif msg.find('morgen'): self.sendMessage(chat_id, msg)
+            else: self.sendMessage(chat_id,msg)
+            time.sleep(2.0)
+            if probaccept(0.5):
+                return weather_report()
+            elif probaccept(0.5):
+                return self.entertainment.get_sonnet()
+            elif probaccept(0.5):
+                return self.entertainment.get_joke()
+            else:
+                return self.entertainment.get_openingline()
+            
+        else:
+            return None
 
        
 
@@ -198,14 +213,14 @@ class Henk(object):
             return
 
         if rawcommand.startswith("/weather"):
-            bot.sendMessage(chat_id, weather_report())
+            self.sendMessage(chat_id, weather_report())
 
         if rawcommand.startswith("/refter"):
-            bot.sendMessage(chat_id, reftermenu.get_todays_menu())
+            self.sendMessage(chat_id, reftermenu.get_todays_menu())
 
         if rawcommand.startswith("/calc"):
             text = rawcommand[6:]
-            bot.sendMessage(chat_id, self.response_math(text,clean=True))
+            self.sendMessage(chat_id, self.response_math(text,clean=True))
             return
 
         if rawcommand.startswith("/stats"):
@@ -221,7 +236,7 @@ class Henk(object):
             d = sum([len(i) for i in r.values()])
             a = dataManager.get_all_aliases()
             aa = sum([len(i) for i in a])
-            bot.sendMessage(chat_id, "Ik ken %d custom queries, en heb daar in totaal %d responses op. Verder ken ik %d aliases" % (c,d, aa))
+            self.sendMessage(chat_id, "Ik ken %d custom queries, en heb daar in totaal %d responses op. Verder ken ik %d aliases" % (c,d, aa))
             return
 
         if rawcommand.startswith("/poll"):
@@ -368,8 +383,17 @@ class Henk(object):
                 bot.sendMessage(chat_id, "hmm, iets ging mis. Check even of het getal daadwerkelijk klopt")
             return
             
+        t = msg['date']
+        if t-self.morning_message_timer> 3600*16: #16 hours
+            h = get_current_hour()
+            if h>6 and h <12: #it is morning
+                v = self.morning_message(PPA,command)
+                if v:
+                    self.morning_message_timer = t
+                    self.sendMessage(PPA,v)
+                    return
+
             
-        
         if chat_id in self.silentchats:
             self.active = False
             return
@@ -386,7 +410,7 @@ class Henk(object):
             if self.react_to_query(c):
                 p = self.pick(self.userresponses[self.aliasdict[c]])
                 p = p.replace("!name", self.sendername)
-                if p: bot.sendMessage(chat_id, p)
+                if p: self.sendMessage(chat_id, p)
                 return
             
         #respond to cussing
@@ -408,6 +432,9 @@ class Henk(object):
                 if name == "Olaf": name = "Slomp"
                 val = self.pick(self.responses["hi"]).replace("!name",name)
                 self.sendMessage(chat_id, val)
+                if probaccept(0.07):
+                    time.sleep(1.0)
+                    self.sendMessage(chat_id, self.entertainment.get_joke())
                 return
             except KeyError:
                 self.active = False
@@ -424,7 +451,7 @@ class Henk(object):
         #jokes
         val = startswith(command, self.commands["funny"])
         if val:
-            self.sendMessage(chat_id, self.pick(self.jokes))
+            self.sendMessage(chat_id, self.entertainment.get_joke())
             return
 
         #weather
@@ -442,11 +469,11 @@ class Henk(object):
         val = startswith(command, self.commands["amuse"])
         if val:
             if probaccept(0.7):
-                self.sendMessage(chat_id,self.pick(self.facts))
+                self.sendMessage(chat_id,self.entertainment.get_fact())
             elif probaccept(0.5):
                 s = get_wikipedia.random_wiki_text()
                 if s: self.sendMessage(chat_id,s)
-            else: self.sendMessage(chat_id, self.pick(self.jokes))
+            else: self.sendMessage(chat_id, self.entertainment.get_joke())
             return
 
         #spam check
@@ -535,13 +562,13 @@ class Henk(object):
                 return
             self.active = False
             if probaccept(0.05):
-                bot.sendMessage(chat_id, self.pick(self.openinglines))
+                bot.sendMessage(chat_id, self.entertainment.get_openingline())
                 return
             elif probaccept(0.15):
                 bot.sendMessage(chat_id,self.pick(self.responses["negative_response"]))
             elif probaccept(0.08):
-                r = random.randint(0,len(self.userresponses)-1) # this works because the keys of userresponses 
-                bot.sendMessage(chat_id, self.pick(self.userresponses[r])) #are consecutive integers
+                r = random.randint(0,len(self.userresponses)-1) # this works because the keys of userresponses are consecutive integers
+                bot.sendMessage(chat_id, self.pick(self.userresponses[r]))
             return
         
         self.active = False

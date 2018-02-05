@@ -20,7 +20,7 @@ def dummy_glance(msg):
 
 def make_message(s):
     return {'text': s, 'from': {'id': ADMIN, 'first_name': 'John'},
-            'date': int(time.time())}
+            'date': int(time.time()),'chat':{'id':PPA}}
 
 telepot.glance = dummy_glance
 
