@@ -124,7 +124,7 @@ class Henk(object):
             if msg.startswith('/') and msg.find('morgen')!=-1:
                 self.sendMessage(chat_id, msg)
             elif msg.find('morgen'): self.sendMessage(chat_id, msg)
-            else: self.sendMessage(chat_id,msg)
+            else: self.sendMessage(chat_id,"Goedemorgen")
             time.sleep(2.0)
             if probaccept(0.5):
                 return weather_report()
