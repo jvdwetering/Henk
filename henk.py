@@ -123,7 +123,7 @@ class Henk(object):
         if probaccept(0.3):
             if msg.startswith('/') and msg.find('morgen')!=-1:
                 self.sendMessage(chat_id, msg)
-            elif msg.find('morgen'): self.sendMessage(chat_id, msg)
+            elif msg.find('morgen')!=-1: self.sendMessage(chat_id, msg)
             else: self.sendMessage(chat_id,"Goedemorgen")
             time.sleep(2.0)
             if probaccept(0.5):
