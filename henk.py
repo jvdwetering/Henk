@@ -214,9 +214,11 @@ class Henk(object):
 
         if rawcommand.startswith("/weather"):
             self.sendMessage(chat_id, weather_report())
+            return
 
         if rawcommand.startswith("/refter"):
             self.sendMessage(chat_id, reftermenu.get_todays_menu())
+            return
 
         if rawcommand.startswith("/calc"):
             text = rawcommand[6:]
@@ -259,6 +261,7 @@ class Henk(object):
             dataManager.add_poll(ident[0],ident[1],len(self.polls),query+"|"+"|".join(options),"{}")
             self.polls.append((ident, query, options))
             self.pollvotes.append({})
+            return
             
         #All the learning commands
         if rawcommand.startswith("/learn"):
