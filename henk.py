@@ -125,7 +125,7 @@ class Henk(object):
                 self.sendMessage(chat_id, msg)
             elif msg.find('morgen')!=-1: self.sendMessage(chat_id, msg)
             else: self.sendMessage(chat_id,"Goedemorgen")
-            time.sleep(2.0)
+            time.sleep(1.0)
             if probaccept(0.5):
                 return weather_report()
             elif probaccept(0.5):
