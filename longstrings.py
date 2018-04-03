@@ -17,7 +17,8 @@ photos = {
 "starcraft": "http://alexvdg.nl/cards/starcraft.jpg",
 "traphole": "http://alexvdg.nl/cards/traphole.jpg",
 "trump": "http://alexvdg.nl/cards/trump.jpg",
-"wat": "http://alexvdg.nl/cards/wat.jpg"
+"wat": "http://alexvdg.nl/cards/wat.jpg",
+"gloen": "http://alexvdg.nl/cards/gloen.jpg"
 }
 
 introtext = """Hoi mijn naam is Henk, ik ben een bot die allerlei dingen kan doen.
