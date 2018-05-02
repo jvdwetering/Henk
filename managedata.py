@@ -44,12 +44,18 @@ class ManageData(object):
         val = int(f.read())
         if val:
             decrypt()
-            time.sleep(0.3)
+            time.sleep(0.5)
             f = open("isencrypted.txt", "w")
             f.write("0")
             f.close()
         else:
-            print("Database wasn't encrypted on last closure")
+            print("Database wasn't encrypted on last closure, encrypting now...")
+            encrypt()
+            time.sleep(0.5)
+            print("decrypting...")
+            decrypt()
+            time.sleep(0.5)
+
         self.db = dataset.connect('sqlite:///data.db?check_same_thread=False')
         self.messages = self.db['Messages']
         self.users = self.db['Users']

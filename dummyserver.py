@@ -24,10 +24,8 @@ def make_message(s):
 
 telepot.glance = dummy_glance
 
-henk.bot = Bot()
-henk.dataManager = ManageData()
-henk.dataManager.dummy = True
-henkBot = henk.Henk()
+telebot = Bot()
+henkBot = henk.Henk(telebot, isdummy=True)
 
 while True:
     s = input(">>> ")

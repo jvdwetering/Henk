@@ -2,6 +2,8 @@ import urllib.request
 import xml.etree.ElementTree as ET
 import html
 
+from .base import Module
+
 url1 = "https://xml.buienradar.nl/"
 url2 = "https://gadgets.buienradar.nl/data/raintext?lat={lat:.2f}&lon={lon:.2f}"
 
@@ -82,3 +84,14 @@ def weather_report(weerstation = "6275", lat = 51.81, lon = 5.85):
     temp, buien, samenvatting = raw_weather_report(weerstation, lat, lon)
 
     return samenvatting + " Het is nu %s graden buiten. %s" % (temp, buien)
+
+
+class Weather(Module):
+    def register_commands(self,bot):
+        bot.add_slash_command("weather", self.weather)
+        bot.add_command_category("weather", self.weather)
+
+    def weather(self, bot, msg):
+        return weather_report()
+
+weather = Weather()

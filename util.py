@@ -1,6 +1,12 @@
 import datetime
 import random
 import re
+import os
+
+import telepot
+
+datadir = os.path.abspath("datafiles")
+print(datadir)
 
 def get_current_hour():
     return datetime.datetime.time(datetime.datetime.now()).hour
@@ -35,3 +41,23 @@ def probaccept(p): #returns True with probability p, otherwise False
     if random.random() < p:
         return True
     return False
+
+class Message(object):
+    def __init__(self,msg):
+        content_type, chat_type, chat_id = telepot.glance(msg)
+        self.content_type = content_type
+        self.istext = (content_type == 'text')
+        self.chat_id = chat_id
+        self.chat_type = chat_type
+        self.raw = msg['text']
+        self.normalised = normalise(msg['text'])
+        self.command = self.normalised
+        try:
+            self.sender = msg['from']['id']
+            self.sendername = msg['from']['first_name']
+        except:
+            self.sender = 0
+            self.sendername = ""
+        self.date = msg["date"]
+
+        self.object = msg

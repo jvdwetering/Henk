@@ -1,6 +1,9 @@
 import requests
 import urllib
 
+from .base import Module
+from util import startswith, probaccept
+
 s = "http://nl.wikipedia.org/wiki/Speciaal:Willekeurig"
 
 def random_wiki_text():
@@ -53,3 +56,23 @@ def wiki_text(name):
         return ""
     s = wiki_text_exact(s)
     return s
+
+
+class Wiki(Module):
+    def register_commands(self, bot):
+        bot.add_slash_command("wiki", self.wiki)
+        bot.add_command_category("question", self.wiki)
+
+    def wiki(self, bot, msg):
+        if msg.normalised.find("moeder")!=-1:
+                return bot.pick(bot.responses["je_moeder"])
+        t = msg.raw[-len(msg.command):] # we need the original because capitalization is important
+        t = t.replace("?","").replace("!","").replace(".","").replace('"',"").strip()
+        res = wiki_text(t)
+        if res: return res
+        else:
+            if probaccept(0.5):
+                return bot.pick(bot.responses["wiki_failure"])
+            else: return bot.pick(bot.responses["negative_response"])
+
+wiki = Wiki()

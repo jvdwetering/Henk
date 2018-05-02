@@ -2,6 +2,8 @@ import urllib.request
 import datetime
 from html import unescape
 
+from .base import Module
+
 refterurl = "http://www.ru.nl/facilitairbedrijf/horeca/de-refter/weekmenu-refter/menu-soep-deze-week/"
 gerechturl = "http://www.ru.nl/facilitairbedrijf/horeca/gerecht/menu-{0}/"
 
@@ -85,3 +87,15 @@ def get_todays_menu():
         output += "Gerecht:\n" + gerecht
 
     return output
+
+
+class Menu(Module):
+    def register_commands(self,bot):
+        bot.add_slash_command("refter", self.get_menu)
+
+        bot.add_command_category("refter", self.get_menu)
+
+    def get_menu(self, bot, msg):
+        return get_todays_menu()
+
+menu = Menu()

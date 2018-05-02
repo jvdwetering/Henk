@@ -25,7 +25,10 @@
             "je kan ook niks", "henk wat kun je wel", "henk ik haat je", "fuck you henk",
             "henk je bent vervelend", "henk je bent irritant", "henk ik vind je niet lief", 
             "henk ik vind je niet aardig", "henk bakkes", "henk hou je bek", "henk hou je mond", 
-            "henk stop", "henk hou op", "fuck jou henk"]
+            "henk stop", "henk hou op", "fuck jou henk"],
+        "whatcanyoudo": ["wat kun je allemaal", "wat kun je", "waar ben je goed voor"],
+        "howdoyoulearn": ["hoe kunnen we je helpen", "hoe word je slimmer", "hoe leer je dingen"],
+        "refter": ["wat heeft de refter", "refter", "wat heeft het gerecht"]
     },
     "responses" : {
         "hi": ["Hoi !name", "Hey !name", "hoi !name", "heey !name","!name.", "sup brah", 
