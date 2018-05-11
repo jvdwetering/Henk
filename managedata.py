@@ -108,6 +108,7 @@ class ManageData(object):
         char_words = [d[0] for d in top_words(b1, TextBlob(self.alltext))]
         return (t, words[:10], topposters, char_words[:10])
 
+
     def add_response(self, call, responses, user_id, time):
         if self.dummy: return
         self.commands.insert({'user_id': user_id, 'call': call, 'response': " | ".join(responses), "time": time})
@@ -134,6 +135,7 @@ class ManageData(object):
         self.commands.delete(user_id=user, call=res[num][0], response=res[num][1])
         return True
 
+
     def add_alias(self, aliases, user_id, time):
         if self.dummy: return
         self.aliases.insert({'user_id': user_id, 'aliases': " | ".join(aliases), 'time': time})
@@ -153,6 +155,7 @@ class ManageData(object):
         self.aliases.delete(user_id=user, aliases=res[num])
         return True
 
+
     def add_poll(self, chat_id, mess_id, poll_id, text, votes):
         if self.dummy: return
         d = {'chat_id': chat_id, 'mess_id': mess_id, 'poll_id': poll_id, 'text': text, 'votes': votes}
@@ -163,6 +166,7 @@ class ManageData(object):
 
     def get_all_polls(self):
         return self.polls.find(order_by='poll_id')
+
 
     def set_silent_mode(self, chat_id, setsilent):
         if self.dummy: return
@@ -175,6 +179,7 @@ class ManageData(object):
         t = self.chats.find(silent=1)
         return [i['chat_id'] for i in t]
         
+
 
 def tf(word, blob):
     return (blob.words.count(word)+1) / len(blob.words)

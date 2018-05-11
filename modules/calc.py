@@ -26,7 +26,7 @@ class Calc(Module):
 
     def stats(self, bot, msg):
         m = bot.sendMessage(msg.chat_id, "effe tellen")
-        text = self.response_stats(bot, chat_id)
+        text = self.response_stats(bot, msg.chat_id)
         bot.editMessageText(telepot.message_identifier(m), text)
         return
 
