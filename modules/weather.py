@@ -80,11 +80,6 @@ def raw_weather_report(weerstation = "6275", lat = 51.81, lon = 5.85):
 
     return temp, buien, samenvatting
 
-def weather_report(weerstation = "6275", lat = 51.81, lon = 5.85):
-    temp, buien, samenvatting = raw_weather_report(weerstation, lat, lon)
-
-    return samenvatting + " Het is nu %s graden buiten. %s" % (temp, buien)
-
 
 class Weather(Module):
     def register_commands(self,bot):
@@ -92,6 +87,11 @@ class Weather(Module):
         bot.add_command_category("weather", self.weather)
 
     def weather(self, bot, msg):
-        return weather_report()
+        return self.weather_report()
+
+    def weather_report(weerstation = "6275", lat = 51.81, lon = 5.85):
+        temp, buien, samenvatting = raw_weather_report(weerstation, lat, lon)
+
+    return samenvatting + " Het is nu %s graden buiten. %s" % (temp, buien)
 
 weather = Weather()
