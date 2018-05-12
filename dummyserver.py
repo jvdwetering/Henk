@@ -22,6 +22,22 @@ def make_message(s):
     return {'text': s, 'from': {'id': ADMIN, 'first_name': 'John'},
             'date': int(time.time()),'chat':{'id':PPA}}
 
+def alias_list():
+    h = henkBot
+    pairs = h.aliasdict.items()
+
+    categories = []
+    responses = []
+    mix = []
+    for i in set(h.aliasdict.values()):
+        categories.append([k for k,v in pairs if v==i])
+        responses.append(h.userresponses.get(i,[]))
+
+        mix.append((categories[-1],responses[-1]))
+        
+    return mix, categories, responses
+
+
 telepot.glance = dummy_glance
 
 telebot = Bot()

@@ -370,13 +370,13 @@ if __name__ == '__main__':
         silent=False
 
         h = get_current_hour()
-        if not silent:
-            if h>6 and h<13:
-                telebot.sendMessage(PPA,"Goedemorgen")
-            elif h>12 and h<19:
-                telebot.sendMessage(PPA,"Goedemiddag")
-            else:
-                telebot.sendMessage(PPA,"Goedeavond")
+        #if not silent:
+        #    if h>6 and h<13:
+        #        telebot.sendMessage(PPA,"Goedemorgen")
+        #    elif h>12 and h<19:
+        #        telebot.sendMessage(PPA,"Goedemiddag")
+        #    else:
+        #       telebot.sendMessage(PPA,"Goedeavond")
 
         # Keep the program running.
         while True:
