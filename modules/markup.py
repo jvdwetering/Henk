@@ -99,6 +99,7 @@ class Markup(Module):
 
     def gen_lang_command(self, lang):
         def f(bot, msg):
+            if not msg.command.strip(): return
             f, success = code_to_png(msg.command, lang)
             if not success: return f
             bot.telebot.sendPhoto(msg.chat_id,f)
@@ -106,13 +107,8 @@ class Markup(Module):
         return f
 
     def generate_latex(self, bot, msg):
-        f, success = latex_to_png(msg.command)
-        if not success: return f
-        bot.telebot.sendPhoto(msg.chat_id,f)
-        return
-
-    def generate_python(self, bot, msg):
-        f, success = code_to_png(msg.command)
+        if not msg.command.strip(): return
+        f, success = math_to_png(msg.command)
         if not success: return f
         bot.telebot.sendPhoto(msg.chat_id,f)
         return

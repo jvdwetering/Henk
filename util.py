@@ -49,9 +49,14 @@ class Message(object):
         self.istext = (content_type == 'text')
         self.chat_id = chat_id
         self.chat_type = chat_type
-        self.raw = msg['text']
-        self.normalised = normalise(msg['text'])
-        self.command = self.normalised
+        if self.istext:
+            self.raw = msg['text']
+            self.normalised = normalise(msg['text'])
+            self.command = self.normalised
+        else:
+            self.raw = ""
+            self.normalised = ""
+            self.command = ""
         try:
             self.sender = msg['from']['id']
             self.sendername = msg['from']['first_name']
