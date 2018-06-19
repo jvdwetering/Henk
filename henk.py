@@ -183,11 +183,17 @@ class Henk(object):
         #slash commands first
         if msg.raw.startswith("/"):
             for k in self.slashcommands.keys():
-                if msg.raw[1:].startswith(k):
+                if " " in msg.raw: cmd = msg.raw.split(" ",1)[0]
+                else: cmd = msg.raw
+                if cmd[1:] == k:
                     msg.command = msg.raw[len(k)+2:].strip()
                     v = self.slashcommands[k](self, msg)
                     if v: self.sendMessage(msg.chat_id, v)
                     return
+
+        #if modules.games.is_games_message(msg):
+        #    modules.games.parse_message(self, msg)
+        #    return
         
         #Morning message
         if msg.date-self.morning_message_timer> 3600*16: #16 hours since last message

@@ -63,6 +63,7 @@ class ManageData(object):
         self.aliases = self.db['Aliases']
         self.chats = self.db['Chats']
         self.polls = self.db['Polls']
+        self.games = self.db['Games']
         self.dummy = False
 
         self.alltext = "\n".join(i['text'] for i in self.messages.all())
@@ -168,6 +169,21 @@ class ManageData(object):
         return self.polls.find(order_by='poll_id')
 
 
+    def add_game(self, game_type, game_id, game_data, date, is_active):
+        if self.dummy: return
+        d = {'game_type': game_type, 'game_id': game_id,
+             'game_data': game_data, 'date': date, 'is_active': is_active}
+        if self.games.find_one(game_type=game_type,game_id=game_id):
+            self.games.update(d, ['game_type','game_id'])
+        else:
+            self.games.insert(d)
+
+    def get_active_games(self, game_type=None):
+        if not game_type:
+            return self.games.find(is_active=True, order_by='game_id')
+        return self.games.find(game_type=game_type, is_active=True, order_by='game_id')
+
+
     def set_silent_mode(self, chat_id, setsilent):
         if self.dummy: return
         if self.chats.find_one(chat_id = chat_id):
@@ -267,12 +283,12 @@ def prepare_pownies_text(m):
 
 
     
-
-if __name__ == '__main__':
-    m = ManageData()
-    data = m.db['Messages'].all()
-    totaltext = "\n".join(i['text'] for i in data)
-    b1 = TextBlob(totaltext)
-    data = m.latest_messages(PPA, 24)
-    t = "\n".join(i['text'] for i in data)
-    b2 =TextBlob(t)
+##
+##if __name__ == '__main__':
+##    m = ManageData()
+##    data = m.db['Messages'].all()
+##    totaltext = "\n".join(i['text'] for i in data)
+##    b1 = TextBlob(totaltext)
+##    data = m.latest_messages(PPA, 24)
+##    t = "\n".join(i['text'] for i in data)
+##    b2 =TextBlob(t)

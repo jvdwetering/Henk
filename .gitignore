@@ -2,6 +2,7 @@ __pycache__
 apikey.txt
 data.db
 password.txt
+isencrypted.txt
 
 ## Core latex/pdflatex auxiliary files:
 *.aux

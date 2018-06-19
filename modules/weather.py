@@ -89,7 +89,7 @@ class Weather(Module):
     def weather(self, bot, msg):
         return self.weather_report()
 
-    def weather_report(weerstation = "6275", lat = 51.81, lon = 5.85):
+    def weather_report(self, weerstation = "6275", lat = 51.81, lon = 5.85):
         temp, buien, samenvatting = raw_weather_report(weerstation, lat, lon)
         return samenvatting + " Het is nu %s graden buiten. %s" % (temp, buien)
 
