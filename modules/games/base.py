@@ -52,3 +52,50 @@ class BaseGame(object):
 
     def save_game_state(self):
         self.bot.dataManager.add_game(self.game_type,self.game_id,pickle.dumps(self),self.date, self.is_active)
+
+
+def gamestarter(parent, bot, index, gameclass, maxplayers, sender, chat, welcome):
+    options = []
+    buttons = ["join/unjoin", "start"]
+    for i,o in enumerate(buttons):
+        options.append(InlineKeyboardButton(text=o,callback_data="gamestart{}:{}".format(str(index),str(i))))
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[options])
+    sent = bot.telebot.sendMessage(chat, welcome+"\n*"+sender[1], reply_markup=keyboard)
+    ident = telepot.message_identifier(sent)
+    return StartManager(parent, bot, gameclass, maxplayers, sender, ident, keyboard, welcome)
+
+class StartManager(object):
+    def __init__(self, parent, bot, gameclass, maxplayers, sender, ident, keyboard, welcome):
+        self.parent = parent
+        self.bot = bot
+        self.gameclass = gameclass
+        self.maxplayers = maxplayers
+        self.senderid = sender[0]
+        self.sendername = sender[1]
+        self.players = {sender[0]: sender[1]}
+        self.ident = ident
+        self.keyboard = keyboard
+        self.welcome = welcome
+
+    def callback(self, button_id, sender, sendername,date):
+        if button_id == 0: #join/unjoin
+            if sender in self.players:
+                del self.players[sender]
+            else:
+                if len(self.players) == self.maxplayers:
+                    return "Het spel zit al vol"
+                self.players[sender] = sendername
+            self.update_message()
+        elif button_id == 1: #start game
+            if not self.players:
+                return "Er moet wel iemand meedoen"
+            index = len(self.bot.dataManager.games)
+            g = self.gameclass(self.bot,index,list(self.players.items()),date)
+            self.parent.games[index] = g
+            editor = telepot.helper.Editor(self.bot.telebot, self.ident)
+            editor.editMessageReplyMarkup()
+
+    def update_message(self):
+        msg = self.welcome +"\n" +"\n*".join(self.players.values())
+        editor = telepot.helper.Editor(self.bot.telebot, self.ident)
+        editor.editMessageText(msg, reply_markup=self.keyboard)

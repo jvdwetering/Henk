@@ -102,6 +102,8 @@ class BasePlayer(object):
         color = played_cards[0].color
         played_trumps = played_cards.filter_color(self.trump)
         highest = highest_card(played_cards)
+        if highest.owner == None:
+            raise KeyError("Played card doesn't have owner")
         winning = (highest.owner == self.partner)
         cards = self.cards.filter_color(color)
         if cards: #we can confess colour
@@ -109,6 +111,7 @@ class BasePlayer(object):
             #trump and not winning
             higher = [t for t in cards if t>highest]
             if higher: return higher # We must overtrump
+            return cards
         elif winning: return self.cards # We are winning and can't confess, so everything is legal
         trumps = self.cards.get_trumps()
         if not trumps: return self.cards # Don't have any trumps so everything is legal

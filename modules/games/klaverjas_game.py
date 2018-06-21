@@ -192,10 +192,7 @@ class RealPlayer(BasePlayer):
         for color in range(4):
             s += suit_to_unicode[color] + " " + ", ".join([short_valuenames[v] for v in self.cards.filter_color(color).values()]) + "\n"
         return s.strip()
-
-    def set_partner(self, i):
-        pass
-
+        
     def give_cards(self, cards):
         super().give_cards(cards)
         #self.send_message(self.hand_string())
