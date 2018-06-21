@@ -5,7 +5,7 @@ from html import unescape
 from .base import Module
 
 refterurl = "http://www.ru.nl/facilitairbedrijf/horeca/de-refter/weekmenu-refter/menu-soep-deze-week/"
-gerechturl = "http://www.ru.nl/facilitairbedrijf/horeca/gerecht/menu-{0}/"
+gerechturl = "http://www.ru.nl/facilitairbedrijf/horeca/het-gerecht-grotiusgebouw/menu-{0}/"
 
 maanden = ["januari", "februari", "maart", "april", "mei", "juni",
            "juli", "augustus", "oktober", "november", "december"]
