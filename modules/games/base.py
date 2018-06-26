@@ -1,6 +1,7 @@
 import pickle
 
 import telepot
+import random
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 
 class BaseGame(object):
@@ -89,8 +90,12 @@ class StartManager(object):
         elif button_id == 1: #start game
             if not self.players:
                 return "Er moet wel iemand meedoen"
+            if sender != self.senderid:
+            	return "Alleen {} kan dit potje beginnen".format(self.sendername)
             index = len(self.bot.dataManager.games)
-            g = self.gameclass(self.bot,index,list(self.players.items()),date)
+            l = list(self.players.items())
+            random.shuffle(l)
+            g = self.gameclass(self.bot,index,l,date)
             self.parent.games[index] = g
             editor = telepot.helper.Editor(self.bot.telebot, self.ident)
             editor.editMessageReplyMarkup()

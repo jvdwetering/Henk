@@ -61,7 +61,7 @@ class Games(Module):
         s = self.gamestarters[callback_id].callback(button_id,msg['from']['id'],msg['from']['first_name'], d)
         if s: 
             query_id, from_id, data = telepot.glance(msg, flavor='callback_query')
-            bot.telebot.sendMessage(from_id, s)
+            bot.telebot.answerCallbackQuery(query_id, s)
 
     # def is_games_message(self, msg):
     #     if not msg.sender in self.active_users: return False
