@@ -23,6 +23,8 @@ class Klaverjas(BaseGame):
             p = AI(i)
             self.players.append(p)
 
+        self.callbacks_disposed = []
+
         self.initialize()
         
     def give_cards(self):
@@ -71,6 +73,8 @@ class Klaverjas(BaseGame):
 
 
     def _trump_set(self,ident, button_id):
+        if ident in self.callbacks_disposed: return
+        self.callbacks_disposed.append(ident)
         self.trump = button_id
         [self.players[i].set_trump(self.trump) for i in range(4)]
         self.disable_keyboard(ident)
@@ -82,6 +86,8 @@ class Klaverjas(BaseGame):
     
 
     def _card_picked(self,ident, button_id):
+        if ident in self.callbacks_disposed: return
+        self.callbacks_disposed.append(ident)
         self.cards_this_round.append(self.playable_cards[button_id])
         p = self.players[self.currentplayer]
         p.cards.remove(self.playable_cards[button_id])
@@ -142,12 +148,14 @@ class Klaverjas(BaseGame):
 
 
     def _accept_glory(self,ident, button_id):
-        if button_id == 0:
+        if ident in self.callbacks_disposed: return
+        self.callbacks_disposed.append(ident)
+        if button_id == 1:
             self.glory == 0
         else:
             self.glory = glory_calculation(self.cards_this_round, self.trump)
         self.disable_keyboard(ident)
-        self.process_round()
+        self.process_round(progress_game=True)
     def message_accept_glory(self, player, glory_amount):
         buttons = ["ja", "nee"]
         self.send_keyboard_message(player.user_id, "{!s} roem. Kloppen?".format(glory_amount), buttons, self._accept_glory)
@@ -159,12 +167,13 @@ class Klaverjas(BaseGame):
         winner = h.owner 
         points = card_points(cards, self.trump)
         
-        msg = "" #"Ronde {!s}:\n".format(self.round)
+        msg = ""
         if self.glory == -1:
             glory = glory_calculation(cards, self.trump)
             if glory == 0 or not isinstance(self.players[winner], RealPlayer):
                 self.glory = glory
             else:
+                self.update_status_message()
                 self.message_accept_glory(self.players[winner], glory)
                 return
         if self.glory>0:
@@ -216,7 +225,8 @@ class Klaverjas(BaseGame):
             self.cards_this_round.append(self.players[self.currentplayer].play_card(self.round, self.cards_this_round.copy()))
             self.currentplayer = (self.currentplayer+1)%4
             if self.currentplayer == self.startingplayer:
-                self.process_round()
+                self.process_round(progress_game=True)
+                return
             
 
 
