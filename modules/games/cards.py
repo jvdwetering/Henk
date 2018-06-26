@@ -39,7 +39,8 @@ suit_to_unicode = {
     CLUBS: u"\u2663",
     SPADES: u"\u2660",
     DIAMONDS: u"\u2666",
-    HEARTS: u"\u2665"
+    #HEARTS: u"\u2665" #This one looks black on iOS
+    HEARTS: u"\u2764"
 }
 short_valuenames = {SEVEN: "7", EIGHT: "8", NINE: "9", TEN: "10",
                     JACK: "J", QUEEN: "Q", KING: "K", ACE: "A"}

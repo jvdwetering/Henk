@@ -10,8 +10,8 @@ KLAVERJASSEN = 100
 
 class Klaverjas(BaseGame):
     game_type = KLAVERJASSEN
-    def __init__(self, bot, game_id, players,date):
-        super().__init__(bot, game_id, players,date)
+    def __init__(self, bot, game_id, players,date, cmd):
+        super().__init__(bot, game_id, players,date, cmd)
         self.real_players = []
         for user_id,user_name in players:
             p = RealPlayer(self, user_id,user_name, len(self.real_players))
@@ -27,7 +27,11 @@ class Klaverjas(BaseGame):
         
     def give_cards(self):
         self.deck = create_deck()
-        random.shuffle(self.deck)
+        if self.cmd: 
+            r = random.Random()
+            r.seed(self.cmd)
+            r.shuffle(self.deck)
+        else: random.shuffle(self.deck)
         for i in range(4):
             self.players[i].give_cards(Cards([self.deck[i*8+j] for j in range(8)]))
 
@@ -35,6 +39,8 @@ class Klaverjas(BaseGame):
         self.round = 1
         self.cards_this_round = Cards()
         self.cards_previous_round = Cards()
+        self.glory = -1
+        self.glory_previous_round = -1
         self.currentplayer = 0
         self.startingplayer= 0
         self.status_messages = []
@@ -49,6 +55,11 @@ class Klaverjas(BaseGame):
         self.points2 = 0
 
         self.give_cards()
+        msg = "Team 1: {}, {}\n".format(self.p1.name, self.p3.name)
+        msg += "Team 2: {}, {}\n".format(self.p2.name, self.p4.name)
+        for p in self.real_players:
+            p.send_message(msg+p.hand_string())
+
         if isinstance(self.players[0],RealPlayer):
             self.current_users = [self.players[0].user_id]
             self.message_pick_trump(self.players[0])
@@ -79,8 +90,8 @@ class Klaverjas(BaseGame):
         self.disable_keyboard(ident)
         self.currentplayer = (self.currentplayer+1)%4
         if self.currentplayer == self.startingplayer:
-            self.process_round()
-        self.progress_game()
+            self.process_round(progress_game=True)
+        else: self.progress_game()
     def message_play_card(self, player):
         self.playable_cards = player.legal_cards(self.cards_this_round)
         buttons = [card.pretty() for card in self.playable_cards]
@@ -91,19 +102,29 @@ class Klaverjas(BaseGame):
         if self.cards_previous_round:
             msg = "Vorige ronde: \n"
             for i in range(4):
-                msg += "{}: {}\n".format(self.players[self.cards_previous_round[i].owner].name,
-                                         self.cards_previous_round[i].pretty())
+                p = self.players[self.cards_previous_round[i].owner]
+                if p.index%2 == 0: msg += "*"
+                msg += "{}: {}\n".format(p.name, self.cards_previous_round[i].pretty())
             winner = highest_card(self.cards_previous_round,self.trump).owner
-            msg += "{} had gewonnen\n \n".format(self.players[winner].name)
+            #glory = glory_calculation(self.cards_previous_round, self.trump)
+            if self.glory_previous_round > 0: 
+                msg += "Roem! {!s} punten\n".format(self.glory_previous_round)
+            msg += "{} heeft gewonnen\n \n".format(self.players[winner].name)
         else: msg = ""
         msg += "Ronde {!s}\n".format(self.round)
         count = len(self.cards_this_round)
         for i in range(count):
-            msg += "{}: {}\n".format(self.players[(self.startingplayer+i)%4].name, self.cards_this_round[i].pretty())
+            p = self.players[(self.startingplayer+i)%4]
+            if p.index%2 == 0: msg += "*"
+            msg += "{}: {}\n".format(p.name, self.cards_this_round[i].pretty())
         if count != 4:
             i = count
-            msg += "{}: Bezig met kiezen\n".format(self.players[(self.startingplayer+i)%4].name)
+            p = self.players[(self.startingplayer+i)%4]
+            if p.index%2 == 0: msg += "*"
+            msg += "{}: Bezig met kiezen\n".format(p.name)
             for i in range(count+1, 4):
+                p = self.players[(self.startingplayer+i)%4]
+                if p.index%2 == 0: msg += "*"
                 msg += "{}: \n".format(self.players[(self.startingplayer+i)%4].name)
         else:
             msg += "\n" + self.endroundtext
@@ -118,22 +139,43 @@ class Klaverjas(BaseGame):
                 editor = telepot.helper.Editor(self.bot.telebot, ident)
                 editor.editMessageText(msg)
 
-    def process_round(self):
+
+
+    def _accept_glory(self,ident, button_id):
+        if button_id == 0:
+            self.glory == 0
+        else:
+            self.glory = glory_calculation(self.cards_this_round, self.trump)
+        self.disable_keyboard(ident)
+        self.process_round()
+    def message_accept_glory(self, player, glory_amount):
+        buttons = ["ja", "nee"]
+        self.send_keyboard_message(player.user_id, "{!s} roem. Kloppen?".format(glory_amount), buttons, self._accept_glory)
+        self.save_game_state()
+
+    def process_round(self, progress_game=False):
         cards = self.cards_this_round
         h = highest_card(cards,self.trump)
-        winner = h.owner  #need to correct because index starts at 1
+        winner = h.owner 
         points = card_points(cards, self.trump)
-        glory = glory_calculation(cards, self.trump)
+        
         msg = "" #"Ronde {!s}:\n".format(self.round)
-        if glory > 0:
-            msg += "Roem! {!s} punten\n".format(glory)
+        if self.glory == -1:
+            glory = glory_calculation(cards, self.trump)
+            if glory == 0 or not isinstance(self.players[winner], RealPlayer):
+                self.glory = glory
+            else:
+                self.message_accept_glory(self.players[winner], glory)
+                return
+        if self.glory>0:
+            msg += "Roem! {!s} punten\n".format(self.glory)
         msg += "{} heeft gewonnen met een {}".format(self.players[winner].name, h.pretty())
-        #self.send_user_message(msg)
+        
         if winner == 0 or winner == 2:
-            self.points1 += points + glory
+            self.points1 += points + self.glory
             if self.round == 8: self.points1 += 10
         else:
-            self.points2 += points + glory
+            self.points2 += points + self.glory
             if self.round == 8: self.points2 += 10
         for p in self.players:
             p.show_trick(cards, self.round)
@@ -145,7 +187,8 @@ class Klaverjas(BaseGame):
         self.currentplayer = winner
         self.cards_previous_round = self.cards_this_round
         self.cards_this_round = Cards()
-        #self.status_messages = []
+        self.glory_previous_round = self.glory
+        self.glory = -1
 
         if self.round == 8: #end of game
             msg = "Potje is afgelopen. \nTeam 1: {!s} punten\nTeam 2: {!s} punten\n".format(self.points1,self.points2)
@@ -156,6 +199,9 @@ class Klaverjas(BaseGame):
             self.save_game_state()
         
         self.round += 1
+
+        if progress_game:
+            self.progress_game()
         
 
     def progress_game(self):

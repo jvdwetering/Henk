@@ -22,27 +22,18 @@ class Games(Module):
         self.gamestarters = []
 
     def register_commands(self, bot):
-        '''
-        should call 
-        bot.add_slash_command("slashcommand", self.callback)
-        bot.add_command_category("commandtype", self.callback)
-        bot.add_callback_query("ident", self.callback)
-        '''
         bot.add_slash_command("klaverjassen", self.klaverjassen)
         bot.add_callback_query("gamestart", self.callbackstart)
         bot.add_callback_query("games", self.callback)
 
     def klaverjassen(self,bot,msg):
-        # if msg.sender in self.active_users:
-        #     if self.games[self.active_users[msg.sender]].is_active:
-        #         return "Je bent al bezig met een potje"
         if msg.chat_type == "private":
             ident = len(bot.dataManager.games)
-            g = Klaverjas(bot, ident, [(msg.sender,msg.sendername)], msg.date)
+            g = Klaverjas(bot, ident, [(msg.sender,msg.sendername)], msg.date, msg.command.strip())
             self.games[ident] = g
             return
         g = gamestarter(self, bot, len(self.gamestarters), Klaverjas, 4, (msg.sender, msg.sendername), 
-                        msg.chat_id, "Klaverjassen! Wie doet er mee?")
+                        msg.chat_id, "Klaverjassen! Wie doet er mee?", msg.command.strip())
         self.gamestarters.append(g)
 
     def callback(self, bot, msg):

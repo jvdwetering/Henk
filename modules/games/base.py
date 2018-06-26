@@ -1,12 +1,11 @@
 import pickle
 
 import telepot
-import random
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 
 class BaseGame(object):
     game_type = 0 #specifies which game it is. Should be unique for each class
-    def __init__(self, bot, game_id, players, date):
+    def __init__(self, bot, game_id, players, date, cmd):
         self.bot = bot
         self.game_id = game_id #unique identifier for this game instance
         self.is_active = True
@@ -14,6 +13,7 @@ class BaseGame(object):
         for user_id, user_name in players:
             self.player_names[user_id] = user_name
         self.date = date
+        self.cmd = cmd
 
         #self.current_users = [] # The list of user_ids for which the game is waiting for input.
 
@@ -55,7 +55,7 @@ class BaseGame(object):
         self.bot.dataManager.add_game(self.game_type,self.game_id,pickle.dumps(self),self.date, self.is_active)
 
 
-def gamestarter(parent, bot, index, gameclass, maxplayers, sender, chat, welcome):
+def gamestarter(parent, bot, index, gameclass, maxplayers, sender, chat, welcome, cmd):
     options = []
     buttons = ["join/unjoin", "start"]
     for i,o in enumerate(buttons):
@@ -63,29 +63,33 @@ def gamestarter(parent, bot, index, gameclass, maxplayers, sender, chat, welcome
     keyboard = InlineKeyboardMarkup(inline_keyboard=[options])
     sent = bot.telebot.sendMessage(chat, welcome+"\n*"+sender[1], reply_markup=keyboard)
     ident = telepot.message_identifier(sent)
-    return StartManager(parent, bot, gameclass, maxplayers, sender, ident, keyboard, welcome)
+    return StartManager(parent, bot, gameclass, maxplayers, sender, ident, keyboard, welcome, cmd)
 
 class StartManager(object):
-    def __init__(self, parent, bot, gameclass, maxplayers, sender, ident, keyboard, welcome):
+    def __init__(self, parent, bot, gameclass, maxplayers, sender, ident, keyboard, welcome, cmd):
         self.parent = parent
         self.bot = bot
         self.gameclass = gameclass
         self.maxplayers = maxplayers
         self.senderid = sender[0]
         self.sendername = sender[1]
-        self.players = {sender[0]: sender[1]}
+        self.players = [(sender[0], sender[1])]
         self.ident = ident
         self.keyboard = keyboard
         self.welcome = welcome
+        self.cmd = cmd
+
+        self.active = True
 
     def callback(self, button_id, sender, sendername,date):
+        if not self.active: return
         if button_id == 0: #join/unjoin
-            if sender in self.players:
-                del self.players[sender]
+            if self.players.count((sender,sendername)):
+                self.players.remove((sender,sendername))
             else:
                 if len(self.players) == self.maxplayers:
                     return "Het spel zit al vol"
-                self.players[sender] = sendername
+                self.players.append((sender,sendername))
             self.update_message()
         elif button_id == 1: #start game
             if not self.players:
@@ -93,14 +97,14 @@ class StartManager(object):
             if sender != self.senderid:
             	return "Alleen {} kan dit potje beginnen".format(self.sendername)
             index = len(self.bot.dataManager.games)
-            l = list(self.players.items())
-            random.shuffle(l)
-            g = self.gameclass(self.bot,index,l,date)
+            self.active = False
+            g = self.gameclass(self.bot,index,self.players,date, self.cmd)
             self.parent.games[index] = g
             editor = telepot.helper.Editor(self.bot.telebot, self.ident)
             editor.editMessageReplyMarkup()
 
+
     def update_message(self):
-        msg = self.welcome +"\n" +"\n*".join(self.players.values())
+        msg = self.welcome +"\n*" +"\n*".join(n for i, n in self.players)
         editor = telepot.helper.Editor(self.bot.telebot, self.ident)
         editor.editMessageText(msg, reply_markup=self.keyboard)
