@@ -45,11 +45,11 @@ class Admin(Module):
             return "1 of 0 aub"
         else:
             v = int(bool(int(t)))
-            bot.dataManager.set_silent_mode(chat_id, v)
-            if v == 1 and not chat_id in bot.silentchats:
-                bot.silentchats.append(chat_id)
-            if v == 0 and chat_id in self.silentchats:
-                bot.silentchats.remove(chat_id)
+            bot.dataManager.set_silent_mode(msg.chat_id, v)
+            if v == 1 and not msg.chat_id in bot.silentchats:
+                bot.silentchats.append(msg.chat_id)
+            if v == 0 and msg.chat_id in self.silentchats:
+                bot.silentchats.remove(msg.chat_id)
             return "done"
 
 admin = Admin()
