@@ -41,6 +41,7 @@ class Klaverjas(BaseGame):
         self.round = 1
         self.cards_this_round = Cards()
         self.cards_previous_round = Cards()
+        self.round_lists = []
         self.glory = -1
         self.glory_previous_round = -1
         self.currentplayer = 0
@@ -196,17 +197,19 @@ class Klaverjas(BaseGame):
 
         self.startingplayer = winner
         self.currentplayer = winner
+        self.round_lists.append(self.cards_this_round)
         self.cards_previous_round = self.cards_this_round
         self.cards_this_round = Cards()
         self.glory_previous_round = self.glory
         self.glory = -1
+
 
         if self.round == 8: #end of game
             msg = "Potje is afgelopen. \nTeam 1: {!s} punten\nTeam 2: {!s} punten\n".format(self.points1,self.points2)
             if self.points1 < self.points2:
                 msg += "Team 1 is nat"
             self.send_user_message(msg)
-            self.is_active = False
+            self.game_ended()
             self.save_game_state()
         
         self.round += 1
@@ -239,6 +242,7 @@ class KlaverjasDispatcher(BaseDispatcher):
     def __init__(self, bot, game_id, msg):
         super().__init__(bot, game_id, msg)
         self.players = [(self.sender_id,self.sender_name)]
+        self.started = False
 
     def message_init(self):
         txt = self.welcome+"\n*" + self.sender_name
@@ -246,7 +250,7 @@ class KlaverjasDispatcher(BaseDispatcher):
 
     def callback(self, ident, button_id, s):
         sender, sendername = s
-        if not self.is_active: return
+        if self.started: return "Potje is al begonnen"
         if button_id == 0: #join/unjoin
             if self.players.count((sender,sendername)):
                 self.players.remove((sender,sendername))
@@ -261,8 +265,9 @@ class KlaverjasDispatcher(BaseDispatcher):
             if sender != self.sender_id:
                 return "Alleen {} kan dit potje beginnen".format(self.sender_name)
             index = len(self.bot.dataManager.games)
-            self.is_active = False
+            self.started = True
             g = Klaverjas(self.bot,index,self.players,self.date, self.cmd)
+            g.final_callback = self.game_end
             self.bot.games[index] = g
             editor = telepot.helper.Editor(self.bot.telebot, self.ident)
             editor.editMessageReplyMarkup()
@@ -271,6 +276,24 @@ class KlaverjasDispatcher(BaseDispatcher):
         msg = self.welcome +"\n" +"\n".join("* "+n for i,n in self.players)
         editor = telepot.helper.Editor(self.bot.telebot, self.ident)
         editor.editMessageText(msg, reply_markup=self.get_keyboard(self.buttons,index=0))
+
+    def game_end(self, g):
+        msg = "Team 1: {}, {}\n".format(g.p1.name, g.p3.name)
+        msg += "Team 2: {}, {}\n".format(g.p2.name, g.p4.name)
+        msg += "{!s} punten vs {!s} punten".format(g.points1,g.points2)
+        if g.points1 < g.points2: msg += ". Nat!\n\n"
+        else: msg += "\n\n"
+
+        for k,cards in enumerate(g.round_lists):
+            msg += "Ronde {!s}:\n".format(k+1)
+            for i in range(4):
+                p = g.players[cards[i].owner]
+                if p.index%2 == 0: msg += "*"
+                msg += "{}: {}\n".format(p.name, cards[i].pretty())
+        editor = telepot.helper.Editor(self.bot.telebot, self.ident)
+        editor.editMessageText(msg)
+
+
 
 
 class RealPlayer(BasePlayer):

@@ -20,7 +20,13 @@ class BaseGame(object):
         self.callbacks = [] #consists of tuples ((chat_id, message_id), callback) where callback is 
                             # a function with 2 arguments: ident, button_id where
                             # ident = (chat_id, message_id)
+
+        self.final_callback = None
         self.save_game_state()
+
+    def game_ended(self):
+        self.is_active = False
+        if self.final_callback: self.final_callback(self)
 
 
     def send_user_message(self, msg, user_id=None):
