@@ -2,7 +2,7 @@ import random
 
 import telepot
 
-from .base import BaseGame
+from .base import BaseGame, BaseDispatcher
 from .cards import *
 from .klaverjas_ai import BasePlayer, AI
 
@@ -46,6 +46,7 @@ class Klaverjas(BaseGame):
         self.currentplayer = 0
         self.startingplayer= 0
         self.status_messages = []
+        self.endroundtext = ""
         self.p1, self.p2, self.p3, self.p4 = self.players
         self.p1.set_partner(self.p3.index)
         self.p3.set_partner(self.p1.index)
@@ -72,7 +73,7 @@ class Klaverjas(BaseGame):
         self.progress_game()
 
 
-    def _trump_set(self,ident, button_id):
+    def _trump_set(self,ident, button_id, user):
         if ident in self.callbacks_disposed: return
         self.callbacks_disposed.append(ident)
         self.trump = button_id
@@ -85,7 +86,7 @@ class Klaverjas(BaseGame):
         self.save_game_state()
     
 
-    def _card_picked(self,ident, button_id):
+    def _card_picked(self,ident, button_id, user):
         if ident in self.callbacks_disposed: return
         self.callbacks_disposed.append(ident)
         self.cards_this_round.append(self.playable_cards[button_id])
@@ -147,7 +148,7 @@ class Klaverjas(BaseGame):
 
 
 
-    def _accept_glory(self,ident, button_id):
+    def _accept_glory(self,ident, button_id, user):
         if ident in self.callbacks_disposed: return
         self.callbacks_disposed.append(ident)
         if button_id == 1:
@@ -167,7 +168,9 @@ class Klaverjas(BaseGame):
         winner = h.owner 
         points = card_points(cards, self.trump)
         
-        msg = ""
+        msg = "{} heeft gewonnen met een {}".format(self.players[winner].name, h.pretty())
+        self.endroundtext = msg
+
         if self.glory == -1:
             glory = glory_calculation(cards, self.trump)
             if glory == 0 or not isinstance(self.players[winner], RealPlayer):
@@ -178,7 +181,6 @@ class Klaverjas(BaseGame):
                 return
         if self.glory>0:
             msg += "Roem! {!s} punten\n".format(self.glory)
-        msg += "{} heeft gewonnen met een {}".format(self.players[winner].name, h.pretty())
         
         if winner == 0 or winner == 2:
             self.points1 += points + self.glory
@@ -230,6 +232,45 @@ class Klaverjas(BaseGame):
             
 
 
+class KlaverjasDispatcher(BaseDispatcher):
+    welcome = "Klaverjassen! Wie doet er mee?"
+    buttons = ["join/unjoin", "start"]
+    maxplayers = 4
+    def __init__(self, bot, game_id, msg):
+        super().__init__(bot, game_id, msg)
+        self.players = [(self.sender_id,self.sender_name)]
+
+    def message_init(self):
+        txt = self.welcome+"\n*" + self.sender_name
+        self.ident = self.send_keyboard_message(self.chat_id, txt, self.buttons, self.callback)
+
+    def callback(self, ident, button_id, s):
+        sender, sendername = s
+        if not self.is_active: return
+        if button_id == 0: #join/unjoin
+            if self.players.count((sender,sendername)):
+                self.players.remove((sender,sendername))
+            else:
+                if len(self.players) == self.maxplayers:
+                    return "Het spel zit al vol"
+                self.players.append((sender,sendername))
+            self.update_message()
+        elif button_id == 1: #start game
+            if not self.players:
+                return "Er moet wel iemand meedoen"
+            if sender != self.sender_id:
+                return "Alleen {} kan dit potje beginnen".format(self.sender_name)
+            index = len(self.bot.dataManager.games)
+            self.is_active = False
+            g = Klaverjas(self.bot,index,self.players,self.date, self.cmd)
+            self.bot.games[index] = g
+            editor = telepot.helper.Editor(self.bot.telebot, self.ident)
+            editor.editMessageReplyMarkup()
+
+    def update_message(self):
+        msg = self.welcome +"\n" +"\n".join("* "+n for i,n in self.players)
+        editor = telepot.helper.Editor(self.bot.telebot, self.ident)
+        editor.editMessageText(msg, reply_markup=self.get_keyboard(self.buttons,index=0))
 
 
 class RealPlayer(BasePlayer):

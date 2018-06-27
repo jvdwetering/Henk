@@ -649,7 +649,7 @@ class AI(BasePlayer):
                             return self.play_this_card(c)
                         return self.play_this_card(filt[-1])
                     else:
-                        #TODO: Maybe do a check for not wasting a TEN
+                        #TODO: Do a check for not wasting a TEN or ACE
                         self.pp("we can't win, play a low card")
                         c, glory = self.maxmin_glory(played_cards, maximize=False)
                         return self.play_this_card(c)
