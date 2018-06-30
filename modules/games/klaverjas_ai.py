@@ -1,6 +1,11 @@
-from .cards import JACK, NINE, ACE, TEN, QUEEN, KING, EIGHT, SEVEN
-from .cards import create_deck, highest_card, colornames, valuenames
-from .cards import pp, Card, Cards, glory_calculation, fake_card, cmp
+if __package__ is None or __package__ == '':
+    from cards import JACK, NINE, ACE, TEN, QUEEN, KING, EIGHT, SEVEN
+    from cards import (create_deck, highest_card, colornames, valuenames,
+                        pp, Card, Cards, glory_calculation, fake_card, cmp)
+else:
+    from .cards import JACK, NINE, ACE, TEN, QUEEN, KING, EIGHT, SEVEN
+    from .cards import create_deck, highest_card, colornames, valuenames
+    from .cards import pp, Card, Cards, glory_calculation, fake_card, cmp
 
 import random
 
