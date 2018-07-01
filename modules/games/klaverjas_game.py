@@ -1,4 +1,5 @@
 import random
+import string
 
 import telepot
 
@@ -29,11 +30,12 @@ class Klaverjas(BaseGame):
         
     def give_cards(self):
         self.deck = create_deck()
-        if self.cmd: 
-            r = random.Random()
-            r.seed(self.cmd)
-            r.shuffle(self.deck)
-        else: random.shuffle(self.deck)
+        if self.cmd: self.seed = self.cmd
+        else:
+            self.seed = ''.join(random.choice(string.ascii_lowercase) for _ in range(10))
+        r = random.Random()
+        r.seed(self.seed)
+        r.shuffle(self.deck)
         for i in range(4):
             self.players[i].give_cards(Cards([self.deck[i*8+j] for j in range(8)]))
 
@@ -42,6 +44,7 @@ class Klaverjas(BaseGame):
         self.cards_this_round = Cards()
         self.cards_previous_round = Cards()
         self.round_lists = []
+        self.glory_lists = []
         self.glory = -1
         self.glory_previous_round = -1
         self.currentplayer = 0
@@ -198,6 +201,7 @@ class Klaverjas(BaseGame):
         self.startingplayer = winner
         self.currentplayer = winner
         self.round_lists.append(self.cards_this_round)
+        self.glory_lists.append(self.glory)
         self.cards_previous_round = self.cards_this_round
         self.cards_this_round = Cards()
         self.glory_previous_round = self.glory
@@ -206,8 +210,10 @@ class Klaverjas(BaseGame):
 
         if self.round == 8: #end of game
             msg = "Potje is afgelopen. \nTeam 1: {!s} punten\nTeam 2: {!s} punten\n".format(self.points1,self.points2)
-            if self.points1 < self.points2:
-                msg += "Team 1 is nat"
+            if self.points1 <= self.points2:
+                msg += "Team 1 is nat\n"
+            if self.points1 == 0 or self.points2 == 0:
+                msg += "Pit!\n"
             self.send_user_message(msg)
             self.game_ended()
             self.save_game_state()
@@ -278,20 +284,35 @@ class KlaverjasDispatcher(BaseDispatcher):
         editor.editMessageText(msg, reply_markup=self.get_keyboard(self.buttons,index=0))
 
     def game_end(self, g):
-        msg = "Team 1: {}, {}\n".format(g.p1.name, g.p3.name)
+        msg = "Klaverjas potje met seed {}".format(g.seed)
+        msg = "Team 1: *{}*, *{}*\n".format(g.p1.name, g.p3.name)
         msg += "Team 2: {}, {}\n".format(g.p2.name, g.p4.name)
         msg += "{!s} punten vs {!s} punten".format(g.points1,g.points2)
-        if g.points1 < g.points2: msg += ". Nat!\n\n"
+        if g.points1 == 0 or g.points2 == 0: msg += ". Pit!\n\n"
+        elif g.points1 <= g.points2: msg += ". Nat!\n\n"
         else: msg += "\n\n"
 
         for k,cards in enumerate(g.round_lists):
-            msg += "Ronde {!s}:\n".format(k+1)
-            for i in range(4):
-                p = g.players[cards[i].owner]
-                if p.index%2 == 0: msg += "*"
-                msg += "{}: {}\n".format(p.name, cards[i].pretty())
+            #msg += "Ronde {!s}:\n".format(k+1)
+            for p in [g.players[c.owner] for c in cards]:
+                if p.index%2 == 0:
+                    msg += "*{}*".format(p.name.center(12))
+                else:
+                    msg += "{}".format(p.name.center(12))
+            msg += "\n"
+            msg += "".join(c.pretty().center(10) for c in cards) + "\n"
+            h = highest_card(cards,g.trump)
+            msg += "{} wint de slag met een {}".format(g.players[h.owner].name, h.pretty()) + "\n"
+            if g.glory_lists[k]:
+                msg += "{!s} roem geklopt".format(g.glory_lists[k]) + "\n"
+            msg += "\n"
+
+            #for i in range(4):
+            #    p = g.players[cards[i].owner]
+            #    if p.index%2 == 0: msg += "*"
+            #    msg += "{}: {}\n".format(p.name, cards[i].pretty())
         editor = telepot.helper.Editor(self.bot.telebot, self.ident)
-        editor.editMessageText(msg)
+        editor.editMessageText(msg,parse_mode="Markdown")
 
 
 

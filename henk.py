@@ -183,8 +183,7 @@ class Henk(object):
         #slash commands first
         if msg.raw.startswith("/"):
             for k in self.slashcommands.keys():
-                if " " in msg.raw: cmd = msg.raw.split(" ",1)[0]
-                else: cmd = msg.raw
+                cmd = msg.raw.split()[0]
                 if cmd[1:] == k:
                     msg.command = msg.raw[len(k)+2:].strip()
                     v = self.slashcommands[k](self, msg)

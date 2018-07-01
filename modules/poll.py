@@ -35,7 +35,7 @@ class Poll(Module):
         for i,o in enumerate(options):
             buttons.append(InlineKeyboardButton(text=o,callback_data="poll%d:%d" % (len(self.polls),i)))
         keyboard = InlineKeyboardMarkup(inline_keyboard=[buttons])
-        sent = bot.telebot.sendMessage(chat_id, "Poll: %s" % query, reply_markup=keyboard)
+        sent = bot.telebot.sendMessage(msg.chat_id, "Poll: %s" % query, reply_markup=keyboard)
         ident = telepot.message_identifier(sent)
         bot.dataManager.add_poll(ident[0],ident[1],len(self.polls),query+"|"+"|".join(options),"{}")
         self.polls.append((ident, query, options))
