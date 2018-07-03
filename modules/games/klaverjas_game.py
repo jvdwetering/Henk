@@ -335,8 +335,9 @@ class KlaverjasChallenge(BaseDispatcher):
     def __init__(self, bot, game_id, msg):
         super().__init__(bot, game_id, msg)
         self.players = OrderedDict({self.sender_id: self.sender_name})
+        self.seed = ''.join(random.choice(string.ascii_lowercase) for _ in range(10))
         index = len(self.bot.dataManager.games)
-        g = Klaverjas(self.bot,index,list(self.players.items()),self.date, "")
+        g = Klaverjas(self.bot,index,list(self.players.items()),self.date, self.seed)
         self.bot.games[index] = g
         g.final_callback = self.game_end
         self.games = {self.sender_id: g}
@@ -348,7 +349,7 @@ class KlaverjasChallenge(BaseDispatcher):
                 return "Je bent al bezig met een potje"
             return "Je hebt je kans gehad, sorry"
         index = len(self.bot.dataManager.games)
-        g = Klaverjas(self.bot,index,[(sender, sendername)],self.date, "")
+        g = Klaverjas(self.bot,index,[(sender, sendername)],self.date, self.seed)
         self.bot.games[index] = g
         g.final_callback = self.game_end
         self.games[sender] = g
