@@ -5,8 +5,7 @@ import telepot
 
 from ..base import Module
 
-from .klaverjas_game import Klaverjas, KlaverjasDispatcher, KLAVERJASSEN
-from .base import gamestarter
+from .klaverjas_game import Klaverjas, KlaverjasDispatcher, KlaverjasChallenge, KLAVERJASSEN
 
 #game_identifier = {KLAVERJASSEN: "k"}
 
@@ -23,20 +22,22 @@ class Games(Module):
 
     def register_commands(self, bot):
         bot.add_slash_command("klaverjassen", self.klaverjassen)
+        bot.add_slash_command("klaverchallenge", self.klaverchallenge)
         #bot.add_callback_query("gamestart", self.callbackstart)
         bot.add_callback_query("games", self.callback)
 
-    def klaverjassen(self,bot,msg):
+    def klaverjassen(self, bot, msg):
         ident = len(bot.dataManager.games)
         if msg.chat_type == "private":
             g = Klaverjas(bot, ident, [(msg.sender,msg.sendername)], msg.date, msg.command.strip())
         else:
             g = KlaverjasDispatcher(bot, ident, msg)
-        #g = gamestarter(self, bot, len(self.gamestarters), Klaverjas, 4, (msg.sender, msg.sendername), 
-        #                msg.chat_id, "Klaverjassen! Wie doet er mee?", msg.command.strip())
-
         bot.games[ident] = g
-        #self.gamestarters.append(g)
+
+    def klaverchallenge(self, bot, msg):
+        ident = len(bot.dataManager.games)
+        g = KlaverjasChallenge(bot, ident, msg)
+        bot.games[ident] = g
 
     def callback(self, bot, msg):
         query_id, from_id, data = telepot.glance(msg, flavor='callback_query')

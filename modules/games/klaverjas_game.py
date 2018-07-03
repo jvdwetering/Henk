@@ -1,5 +1,6 @@
 import random
 import string
+from collections import OrderedDict
 
 import telepot
 
@@ -84,6 +85,7 @@ class Klaverjas(BaseGame):
         [self.players[i].set_trump(self.trump) for i in range(4)]
         self.disable_keyboard(ident)
         self.progress_game()
+        return "Troef gekozen"
     def message_pick_trump(self, player):
         msg = player.hand_string() + "\nKies troef"
         self.send_keyboard_message(player.user_id, msg, [suit_to_unicode[i] for i in range(4)], self._trump_set)
@@ -103,6 +105,8 @@ class Klaverjas(BaseGame):
         if self.currentplayer == self.startingplayer:
             self.process_round(progress_game=True)
         else: self.progress_game()
+        return "Kaart gekozen"
+
     def message_play_card(self, player):
         self.playable_cards = player.legal_cards(self.cards_this_round)
         buttons = [card.pretty() for card in self.playable_cards]
@@ -161,6 +165,7 @@ class Klaverjas(BaseGame):
             self.glory = glory_calculation(self.cards_this_round, self.trump)
         self.disable_keyboard(ident)
         self.process_round(progress_game=True)
+
     def message_accept_glory(self, player, glory_amount):
         buttons = ["ja", "nee"]
         self.send_keyboard_message(player.user_id, "{!s} roem. Kloppen?".format(glory_amount), buttons, self._accept_glory)
@@ -260,11 +265,15 @@ class KlaverjasDispatcher(BaseDispatcher):
         if button_id == 0: #join/unjoin
             if self.players.count((sender,sendername)):
                 self.players.remove((sender,sendername))
+                self.update_message()
+                return "Unjoined"
             else:
                 if len(self.players) == self.maxplayers:
                     return "Het spel zit al vol"
                 self.players.append((sender,sendername))
-            self.update_message()
+                self.update_message()
+                return "Joined"
+
         elif button_id == 1: #start game
             if not self.players:
                 return "Er moet wel iemand meedoen"
@@ -277,18 +286,21 @@ class KlaverjasDispatcher(BaseDispatcher):
             self.bot.games[index] = g
             editor = telepot.helper.Editor(self.bot.telebot, self.ident)
             editor.editMessageReplyMarkup()
+            return "Spel gestart"
 
     def update_message(self):
         msg = self.welcome +"\n" +"\n".join("* "+n for i,n in self.players)
         editor = telepot.helper.Editor(self.bot.telebot, self.ident)
         editor.editMessageText(msg, reply_markup=self.get_keyboard(self.buttons,index=0))
+        self.save_game_state()
 
     def game_end(self, g):
-        msg = "Klaverjas potje met seed {}".format(g.seed)
-        msg = "Team 1: *{}*, *{}*\n".format(g.p1.name, g.p3.name)
+        msg = "Klaverjas potje met seed {}\n".format(g.seed)
+        msg += "Team 1: *{}*, *{}*\n".format(g.p1.name, g.p3.name)
         msg += "Team 2: {}, {}\n".format(g.p2.name, g.p4.name)
+        msg += "Troef is {}\n".format(suit_to_unicode[g.trump])
         msg += "{!s} punten vs {!s} punten".format(g.points1,g.points2)
-        msg += "Troef is {}".format(suit_to_unicode[g.trump])
+        
         if g.points1 == 0 or g.points2 == 0: msg += ". Pit!\n\n"
         elif g.points1 <= g.points2: msg += ". Nat!\n\n"
         else: msg += "\n\n"
@@ -297,9 +309,9 @@ class KlaverjasDispatcher(BaseDispatcher):
             #msg += "Ronde {!s}:\n".format(k+1)
             for p in [g.players[c.owner] for c in cards]:
                 if p.index%2 == 0:
-                    msg += "*{}*".format(p.name.center(12))
+                    msg += "*{}*".format(p.name.center(11))
                 else:
-                    msg += "{}".format(p.name.center(12))
+                    msg += "{}".format(p.name.center(11))
             msg += "\n"
             msg += "".join(c.pretty().center(10) for c in cards) + "\n"
             h = highest_card(cards,g.trump)
@@ -315,6 +327,53 @@ class KlaverjasDispatcher(BaseDispatcher):
         editor = telepot.helper.Editor(self.bot.telebot, self.ident)
         editor.editMessageText(msg,parse_mode="Markdown")
 
+
+class KlaverjasChallenge(BaseDispatcher):
+    welcome = "Klaverjas Challenge. Deelnemers:"
+    buttons = ["start"]
+
+    def __init__(self, bot, game_id, msg):
+        super().__init__(bot, game_id, msg)
+        self.players = OrderedDict({self.sender_id: self.sender_name})
+        index = len(self.bot.dataManager.games)
+        g = Klaverjas(self.bot,index,list(self.players.items()),self.date, "")
+        self.bot.games[index] = g
+        g.final_callback = self.game_end
+        self.games = {self.sender_id: g}
+
+    def callback(self, ident, button_id, s):
+        sender, sendername = s
+        if sender in self.players:
+            if self.games[sender].is_active:
+                return "Je bent al bezig met een potje"
+            return "Je hebt je kans gehad, sorry"
+        index = len(self.bot.dataManager.games)
+        g = Klaverjas(self.bot,index,[(sender, sendername)],self.date, "")
+        self.bot.games[index] = g
+        g.final_callback = self.game_end
+        self.games[sender] = g
+        self.players[sender] = sendername
+        self.update_message()
+        return "Potje gestart"
+
+    def update_message(self):
+        msg = self.welcome +"\n" 
+        for sender_id, name in self.players.items():
+            g = self.games[sender_id]
+            if g.is_active:
+                msg += "*{}: Bezig met spelen\n".format(name)
+            else:
+                msg += "*{}: {!s} vs {!s}\n".format(name, g.points1,g.points2)
+        editor = telepot.helper.Editor(self.bot.telebot, self.ident)
+        editor.editMessageText(msg, reply_markup=self.get_keyboard(self.buttons,index=0))
+        self.save_game_state()
+
+    def game_end(self, g):
+        self.update_message()
+
+    def message_init(self):
+        txt = "{}\n*{}: Bezig met spelen".format(self.welcome, self.sender_name)
+        self.ident = self.send_keyboard_message(self.chat_id, txt, self.buttons, self.callback)
 
 
 
