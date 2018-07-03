@@ -48,7 +48,7 @@ class Admin(Module):
             bot.dataManager.set_silent_mode(msg.chat_id, v)
             if v == 1 and not msg.chat_id in bot.silentchats:
                 bot.silentchats.append(msg.chat_id)
-            if v == 0 and msg.chat_id in self.silentchats:
+            if v == 0 and msg.chat_id in bot.silentchats:
                 bot.silentchats.remove(msg.chat_id)
             return "done"
 

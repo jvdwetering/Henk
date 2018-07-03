@@ -288,6 +288,7 @@ class KlaverjasDispatcher(BaseDispatcher):
         msg = "Team 1: *{}*, *{}*\n".format(g.p1.name, g.p3.name)
         msg += "Team 2: {}, {}\n".format(g.p2.name, g.p4.name)
         msg += "{!s} punten vs {!s} punten".format(g.points1,g.points2)
+        msg += "Troef is {}".format(suit_to_unicode[g.trump])
         if g.points1 == 0 or g.points2 == 0: msg += ". Pit!\n\n"
         elif g.points1 <= g.points2: msg += ". Nat!\n\n"
         else: msg += "\n\n"
