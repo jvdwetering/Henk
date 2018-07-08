@@ -25,6 +25,7 @@ def decrypt():
 
 PPA = -6722364 #hardcoded label for party pownies
 PPA = -218118195 #Henk's fun palace
+KLAVERJAS_GROUP = -311240489
 
 wordfilterlist = [
     "komt", "omdat", "niet", "eens", "moet", "maar", "learn", "viewresponses","showalias",

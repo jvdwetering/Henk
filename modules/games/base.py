@@ -57,7 +57,10 @@ class BaseGame(object):
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        del state['bot']
+        try:
+            del state['bot']
+        except KeyError:
+            pass
         return state
 
     def save_game_state(self):
