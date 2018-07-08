@@ -408,12 +408,12 @@ class KlaverjasChallenge(BaseDispatcher):
             else:
                 if self.unveiled:
                     msg += "*{}: {}/".format(name, suit_to_unicode[g.trump])
-                    if g.pointsglory1: msg += "{!s}+{!s}/".format(g.points1-g.pointsglory1,g.pointsglory1)
-                    else: msg += "{!s}/".format(g.points1)
-                    if g.pointsglory2: msg += "{!s}+{!s}\n".format(g.points2-g.pointsglory2,g.pointsglory2)
+                    if g.pointsglory1: msg += "({!s}) {!s} - ".format(g.pointsglory1, g.points1)
+                    else: msg += "{!s} - ".format(g.points1)
+                    if g.pointsglory2: msg += "{!s} ({!s})\n".format(g.points2,g.pointsglory2)
                     else: msg += "{!s}\n".format(g.points2)
                 else:
-                    msg += "{}: Verborgen\n".format(name)
+                    msg += "{}: Klaar (score verborgen)\n".format(name)
         editor = telepot.helper.Editor(self.bot.telebot, self.ident)
         editor.editMessageText(msg, reply_markup=self.get_keyboard(self.buttons,index=0))
         self.save_game_state()
