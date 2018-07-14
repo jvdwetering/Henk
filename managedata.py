@@ -2,6 +2,7 @@ import time
 import zlib
 import math
 import os
+import pickle
 
 import dataset
 from textblob import TextBlob
@@ -174,8 +175,8 @@ class ManageData(object):
         if self.dummy: return
         d = {'game_type': game_type, 'game_id': game_id,
              'game_data': game_data, 'date': date, 'is_active': is_active}
-        if self.games.find_one(game_type=game_type,game_id=game_id):
-            self.games.update(d, ['game_type','game_id'])
+        if self.games.find_one(game_id=game_id):
+            self.games.update(d, ['game_id'])
         else:
             self.games.insert(d)
 
@@ -183,6 +184,10 @@ class ManageData(object):
         if not game_type:
             return self.games.find(is_active=True, order_by='game_id')
         return self.games.find(game_type=game_type, is_active=True, order_by='game_id')
+
+    def load_game(self, game_id):
+        g = self.games.find_one(game_id=game_id)
+        return pickle.loads(g['game_data'])
 
 
     def set_silent_mode(self, chat_id, setsilent):

@@ -112,18 +112,18 @@ class BasePlayer(object):
         winning = (highest.owner == self.partner)
         cards = self.cards.filter_color(color)
         if cards: #we can confess colour
-            if color != self.trump or winning: return cards #no trumps or we are winning, so no restrictions
-            #trump and not winning
+            if color != self.trump: return cards #no trumps so no restrictions
+            #must not undertrump
             higher = [t for t in cards if t>highest]
             if higher: return higher # We must overtrump
             return cards
-        elif winning: return self.cards # We are winning and can't confess, so everything is legal
         trumps = self.cards.get_trumps()
         if not trumps: return self.cards # Don't have any trumps so everything is legal
-        if not played_trumps: return trumps # We aren't winning and we have trumps, so we must play one of those
+        if not played_trumps and not winning: return trumps # We aren't winning and we have trumps, so we must play one of those
         higher = [t for t in trumps if t>highest]
-        if higher: return higher # We must overtrump
+        if higher and not winning: return higher # We must overtrump
         c = self.cards.filter(lambda c: c.color!=self.trump) #Any card except trumps
+        c.extend(higher)
         if c: return c
         return self.cards #we can't overtrump, but we only have trumps so we need to play them.
 

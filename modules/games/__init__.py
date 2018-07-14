@@ -16,7 +16,7 @@ class Games(Module):
         games = bot.dataManager.get_active_games()
         for g in games:
             game = pickle.loads(g['game_data'])
-            game.bot = bot #This info is not loaded by pickle
+            game.setstate(bot)
             bot.games[g['game_id']] = game
         #self.gamestarters = []
 

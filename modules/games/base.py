@@ -22,7 +22,7 @@ class BaseGame(object):
                             # ident = (chat_id, message_id)
 
         self.final_callback = None
-        self.save_game_state()
+        #self.save_game_state()
 
     def game_ended(self):
         self.is_active = False
@@ -62,6 +62,9 @@ class BaseGame(object):
         except KeyError:
             pass
         return state
+
+    def setstate(self, bot):
+        self.bot = bot
 
     def save_game_state(self):
         self.bot.dataManager.add_game(self.game_type,self.game_id,pickle.dumps(self),self.date, self.is_active)
