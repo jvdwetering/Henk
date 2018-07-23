@@ -10,7 +10,9 @@ client = gspread.authorize(creds)
 key = "1gHqbbzo6vWcjjmXaWVPMXPpM6g_ORTm8dvE9iNP2iq0"
 # Find a workbook by name and open the first sheet
 # Make sure you use the right name here.
-sheet = client.open_by_key(key).sheet1
+spread = client.open_by_key(key)
+sheet = spread.sheet1
+sheet = spread.get_worksheet(1)
  
 # Extract and print all of the values
 #list_of_hashes = sheet.get_all_records()
@@ -18,6 +20,7 @@ sheet = client.open_by_key(key).sheet1
 
 
 import pickle
+import time
 from managedata import ManageData
 
 KLAVERJASSEN = 100
@@ -82,5 +85,19 @@ for seed,contestants in matches.items():
             else:
                 matchups[(p1,p2)][2] += 1
 
-for (p1, p2),(w,l,d) in matchups.items():
-    print("{}|{}: {!s}|{!s}|{!s}".format(players[p1],players[p2],w,l,d))
+#for (p1, p2),(w,l,d) in matchups.items():
+#    print("{}|{}: {!s}|{!s}|{!s}".format(players[p1],players[p2],w,l,d))
+
+rows = []
+for seed, contestants in matches.items():
+    r = []
+    r.append(seed)
+    for c in contestants:
+        r.append(players[c])
+        r.append(scores[(seed,c)])
+    rows.append(r)
+
+def add_rows(rows):
+    for r in rows:
+        time.sleep(1.02)
+        sheet.append_row(r)

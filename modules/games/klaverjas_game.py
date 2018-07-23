@@ -285,15 +285,15 @@ class Klaverjas(BaseGame):
             #msg += "Ronde {!s}:\n".format(k+1)
             for i,c in enumerate(cards):
                 c.played_index = i
-            cards.sort(key=lambda c: self.players[c.owner].index)
-            for p,c in [(self.players[c.owner],c) for c in cards]:
+            cardsorted = Cards(sorted(cards,key=lambda c: self.players[c.owner].index))
+            for p,c in [(self.players[c.owner],c) for c in cardsorted]:
                 if c.played_index == 0:
                     msg += "{}".format(("*["+p.name+"]*").center(11))
                 else:
                     msg += "{}".format(p.name.center(11))
             msg += "\n"
             h = highest_card(cards,self.trump)
-            for c in cards:
+            for c in cardsorted:
                 if c == h: msg += "{}".format(("*["+c.pretty()+"]*").center(10))
                 else: msg += "{}".format(c.pretty().center(10))
             msg += "\n"
