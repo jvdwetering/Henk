@@ -15,6 +15,7 @@ class BasePlayer(object):
         self.index = index
         self.name = ["Henk", "Ingrid", "Klaas", "Bert"][index]
         self.silent = False
+        self.printer = pp
         self.reset()
 
     def reset(self):
@@ -37,10 +38,10 @@ class BasePlayer(object):
     def pp(self, s, index=-1):
         if self.silent: return
         if index == -1:
-            pp("{}: {}".format(self.name, s))
+            self.printer("{}: {}".format(self.name, s))
         else:
             if self.index == index:
-                pp("{}: {}".format(self.name,s))
+                self.printer("{}: {}".format(self.name,s))
 
     def hand_string(self):
         colors = [[],[],[],[]]
@@ -484,6 +485,7 @@ class AI(BasePlayer):
             
     def trow_away_card(self):
         '''Trow away a card, if you can't confess a card'''
+        #TODO: Watch out for making glory
         self.pp("We want to trow away a card")
         colors = self.cards.colors()
         if self.trump in colors:

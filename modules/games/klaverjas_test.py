@@ -66,13 +66,54 @@ def performance_test(ai_class1, ai_class2=BaseAI, ngames=1000):
     print("Percentage gehaald: ", (1-tnat/ngames)*100)
     return tpoints1, tpoints2, tnat
     
+def find_divergent_game(ai_class1, ai_class2):
+    '''Looks for a game where the first class did at least 20 points worse than the second class'''
+    players1 = [ai_class1, ai_class2, ai_class1, ai_class2]
+    players2 = [ai_class2, ai_class1, ai_class2, ai_class1]
+    n = 0
+    while True:
+        n += 1
+        if n%100 == 0:
+            print(n, end='. ')
+        seed = random.randint(1000000,2000000)
+        g1 = Game(silent=2, seed=seed, players=players1)
+        g1.play_game()
+        g2 = Game(silent=2, seed=seed, players=players2)
+        g2.play_game()
+        s1 = g1.points1 - g1.points2
+        s2 = g2.points1 - g2.points2
+        if s1 < s2-20:
+            print("\nseed: ", seed)
+            return g1,g2
+        
+def game_diff(g1, g2):
+    '''Gives the first divergence point of two given games'''
+    msg = "{} ({!s}) {!s} | {!s} ({!s})    vs  {} ({!s}) {!s} | {!s} ({!s})\n".format(
+            suit_to_unicode[g1.trump], g1.pointsglory1, g1.points1, g1.points2, g1.pointsglory2,
+            suit_to_unicode[g2.trump], g2.pointsglory1, g2.points1, g2.points2, g2.pointsglory2)
+    for i in range(len(g1.round_lists)):
+        if g1.round_lists[i] == g2.round_lists[i]: continue
+        else: break
+    
+    for rnd in range(i):
+        msg += g1.pretty_round(rnd)
 
+    msg += "\nDifference here\nGame 1:\n"
+    msg += g1.pretty_round(i)
+    msg += g1.chatter[i]
+    msg += "\n\nGame 2:\n"
+    msg += g2.pretty_round(i)
+    msg += g2.chatter[i]
+    return msg
+    
 
 
 class Game(object):
-    def __init__(self, silent=0, seed=None,players=[]):
+    def __init__(self, silent=0, seed=None,players=[], cancelpoints=True):
         self.should_pause = True if silent < 2 else False
         self.silent = silent
+        self.cancelpoints = cancelpoints # whether points should be added to other team in case of wet
+        self.chatter = []
         if not seed: self.seed = random.randint(10000000,20000000)
         else: self.seed = seed
         self.players = []
@@ -81,11 +122,19 @@ class Game(object):
         if not players: players = [BaseAI]*4
         for i, ai_class in enumerate(players):
             p = ai_class(i)
+            p.printer = self.ai_chatter
             if silent == 2 or silent == 1 and i!=0:
-                p.silent = True
+                p.silent = False # True
             self.pindex[p] = i
             self.players.append(p)
         self.initialize()
+
+    def ai_chatter(self, msg):
+        if self.round > len(self.chatter):
+            self.chatter.append(msg)
+        else:
+            self.chatter[self.round-1] += "\n"+msg
+        if self.silent < 2: print(msg)
 
     def give_cards(self):
         r = random.Random()
@@ -97,6 +146,8 @@ class Game(object):
 
     def initialize(self):
         self.round = 1
+        self.round_lists = []
+        self.glory_lists = []
         self.p1, self.p2, self.p3, self.p4 = self.players
         self.p1.set_partner(self.p3.index)
         self.p3.set_partner(self.p1.index)
@@ -106,6 +157,8 @@ class Game(object):
         self.p3.is_playing = True
         self.points1 = 0
         self.points2 = 0
+        self.pointsglory1 = 0
+        self.pointsglory2 = 0
         self.currentplayer = 0
 
         self.give_cards()
@@ -127,13 +180,17 @@ class Game(object):
         n = winner
         if self.silent < 2: pp("Player %d wins this round with a %s" % (n+1, str(h)))
         if n == 0 or n == 2:
+            self.pointsglory1 += glory
             self.points1 += points + glory
             if self.round == 8: self.points1 += 10
         else:
+            self.pointsglory2 += glory
             self.points2 += points + glory
             if self.round == 8: self.points2 += 10
         for p in self.players:
             p.show_trick(cards, self.round)
+        self.round_lists.append(cards)
+        self.glory_lists.append(glory)
         self.round += 1
         self.currentplayer = n
 ##        if self.round == 7:
@@ -155,26 +212,69 @@ class Game(object):
         self.trump = self.players[0].pick_trump()
         if self.silent < 2: pp("Player 1 has chosen trump %s" % colornames[self.trump])
         [self.players[i].set_trump(self.trump) for i in range(4)]
-        
         for i in range(8):
             self.do_round()
             if self.should_pause:
                 s = input(">> ")
                 if s=="q":
                     break
-            
 
         if self.silent < 2:
             pp("Score: \nTeam 1: %d points\nTeam 2: %d points" % (self.points1, self.points2))
         
         if self.points2 == 0: 
             if self.silent < 2: pp("Pit!")
+            self.pointsglory1 += 100
             self.points1 += 100
 
         if self.points1 < self.points2:
             if self.silent < 2: pp("Wet")
-            self.points2 += self.points1
-            self.points1 = 0
+            if self.cancelpoints:
+                self.points2 += self.points1
+                self.points1 = 0
+
+    def pretty_round(self, rnd):
+        msg = ""
+        k = rnd
+        cards = self.round_lists[rnd]
+        for i,c in enumerate(cards):
+            c.played_index = i
+        cardsorted = Cards(sorted(cards,key=lambda c: self.players[c.owner].index))
+        for p,c in [(self.players[c.owner],c) for c in cardsorted]:
+            if c.played_index == 0:
+                msg += "{}".format(("*["+p.name+"]*").center(11))
+            else:
+                msg += "{}".format(p.name.center(11))
+        msg += "\n"
+        h = highest_card(cards,self.trump)
+        for c in cardsorted:
+            if c == h: msg += "{}".format(("*["+c.pretty()+"]*").center(10))
+            else: msg += "{}".format(c.pretty().center(10))
+        msg += "\n"
+        if self.glory_lists[k]:
+            msg += "{!s} roem geklopt".format(self.glory_lists[k]) + "\n"
+        msg += "\n"
+        return msg
+    
+    def game_string(self):
+        msg = "Klaverjas potje met seed {!s}\n".format(self.seed)
+        msg += "Team 1: *{}*, *{}*\n".format(self.p1.name, self.p3.name)
+        msg += "Team 2: {}, {}\n".format(self.p2.name, self.p4.name)
+        msg += "Troef is {}\n".format(suit_to_unicode[self.trump])
+        if self.pointsglory1: msg += "{!s} (+ {!s} roem)".format(self.points1-self.pointsglory1,self.pointsglory1)
+        else: msg += "{!s}".format(self.points1)
+        msg += " vs "
+        if self.pointsglory2: msg += "{!s} (+ {!s} roem)".format(self.points2-self.pointsglory2,self.pointsglory2)
+        else: msg += "{!s}".format(self.points2)
+        
+        if self.points1 == 0 or self.points2 == 0: msg += ". Pit!\n\n"
+        elif self.points1 <= self.points2: msg += ". Nat!\n\n"
+        else: msg += "\n\n"
+
+        for rnd in range(len(self.round_lists)):
+            msg += self.pretty_round(rnd)
+        msg = "\n".join(s.strip() for s in msg.splitlines())
+        return msg
 
 class RealPlayer(BasePlayer):
     def __init__(self, index):
@@ -229,6 +329,9 @@ def raw_input_card(s):
         card = Card(value, color)
         return card
 
+##if __name__ == '__main__':
+##    g = Game(seed=seed, players=[BaseAI,BaseAI,BaseAI,BaseAI])
+##    g.play_game()
 if __name__ == '__main__':
-    g = Game(seed=seed, players=[BaseAI,BaseAI,BaseAI,BaseAI])
-    g.play_game()
+    g1, g2 = find_divergent_game(NewAI, BaseAI)
+    print(game_diff(g1,g2))
