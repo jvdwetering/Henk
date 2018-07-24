@@ -167,6 +167,10 @@ class Game(object):
         if self.silent < 2:
             pp("Score: \nTeam 1: %d points\nTeam 2: %d points" % (self.points1, self.points2))
         
+        if self.points2 == 0: 
+            if self.silent < 2: pp("Pit!")
+            self.points1 += 100
+
         if self.points1 < self.points2:
             if self.silent < 2: pp("Wet")
             self.points2 += self.points1

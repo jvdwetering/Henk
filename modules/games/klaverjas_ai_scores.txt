@@ -1,0 +1,22 @@
+Voor veranderingen:
+performance_test(BaseAI,BaseAI,ngames=5000)
+Total games played: 5000
+Average score: 105.674 vs 82.548
+Percentage gehaald:  75.03999999999999
+
+Na aanpassing trow_away_card:
+performance_test(NewAI,BaseAI,ngames=5000)
+Total games played: 5000
+Average score: 106.5108 vs 82.0592
+Percentage gehaald:  75.48
+performance_test(BaseAI,NewAI,ngames=5000)
+Total games played: 5000
+Average score: 103.539 vs 84.849
+Percentage gehaald:  74.18
+(517695, 424245, 1291)
+
+Na bugfix in maxmin_glory_prime:
+performance_test(NewAI,BaseAI,ngames=5000)
+Total games played: 5000
+Average score: 106.4982 vs 82.0658
+Percentage gehaald:  75.52

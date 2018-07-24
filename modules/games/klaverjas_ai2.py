@@ -18,11 +18,11 @@ class BasePlayer(object):
         self.reset()
 
     def reset(self):
-        self.partner = None
-        self.cards = Cards()
-        self.discarded = Cards()
-        self.trump = None
-        self.is_playing = False
+        self.partner = None # Index of player on your team
+        self.cards = Cards() # Current cards in your hand
+        self.discarded = Cards() # Cards you have trown out of your hand
+        self.trump = None # The suite of Trump
+        self.is_playing = False # Wether we are the 'attacking' team.
         #We wan't to record what the possible cards are for every player
         self.unknown_cards = [create_deck(), create_deck(), create_deck()]
         #possible_cards[0] is the player next, [1] is our mate, and [2] is the player before us
@@ -30,8 +30,8 @@ class BasePlayer(object):
         self.unknown_cards[0].owner = (1 + index) % 4
         self.unknown_cards[1].owner = (2 + index) % 4
         self.unknown_cards[2].owner = (3 + index) % 4
-        self.unknown_colours = [list(range(4))]*3
-        self.mystery_cards = create_deck()
+        self.unknown_colours = [list(range(4))]*3 # The possible colours every player might have
+        self.mystery_cards = create_deck() # The cards still in play that we don't have
         self.mate_prefered_colors = []
 
     def pp(self, s, index=-1):
@@ -330,6 +330,31 @@ class AI(BasePlayer):
         card.owner = self.index
         return card
 
+    def will_win_this_round(self, cards_played):
+        """Returns whether we are absolutely certain to win this round,
+        regardless of what we will play."""
+        if not cards_played: return False
+        h = highest_card(cards_played)
+        if h.owner != self.partner: return False
+        if len(cards_played) == 3: return True #Only us left to play
+        color = cards_played[0].color
+        is_trumped = h.color == self.trump
+        notyetplayed = list(range(4))
+        notyetplayed.remove(self.index)
+        for c in cards_played: notyetplayed.remove(c.owner)
+        # Since we are assuming that our partner is currently winning
+        # And we are not last to play, there is exactly one other player that
+        # needs to play a card
+        p = notyetplayed[0]
+        d = self.index_to_deck(p) # Possible cards in hand of the player
+        if is_trumped: #winning card is trump
+            if d.higher_then(h): return False # Person could overtrump
+            else: return True
+        if d.filter_color(self.trump): return False # Person could trump in
+        if d.higher_then(h): return False
+        return True
+
+
     def pick_non_trump(self):
         '''Pick a non-trump card to start a round with'''
         non_trumps = self.cards.filter(self.is_not_trump).sorted()
@@ -485,6 +510,8 @@ class AI(BasePlayer):
             
 
     def play_card(self, rnum, played_cards):
+        '''This function is called by the game class. It should return
+        the card that the AI is playing this round.'''
         played_cards = Cards(played_cards)
         self.round = rnum
         legal = self.legal_cards(played_cards)
@@ -517,9 +544,12 @@ class AI(BasePlayer):
                     if len(trumps) > 1:
                         filt = [c for c in trumps if not self.glory_possibility(c) and c.value!=NINE]
                         if filt:
+                            self.pp("Don't have high trump, play low one with no chance of glory")
                             return self.play_this_card(sorted(filt)[0])
+                        self.pp("Don't have high trump, play lowest trump and hope for the best")
                         return self.play_this_card(sorted(trumps)[0])
                     return self.play_this_card(self.pick_non_trump())
+                self.pp("Other team doesn't have trumps, so play non trump")
                 return self.play_this_card(self.pick_non_trump())
             #We are not playing this game
             return self.play_this_card(self.pick_non_trump())
@@ -788,7 +818,7 @@ class AI(BasePlayer):
             return (best, glory)
         if len(cards) == 1:
             other1 = self.unknown_cards[0].filter_color(cards[0].color)
-            other2 = self.unknown_cards[0].filter_color(cards[0].color)
+            other2 = self.unknown_cards[1].filter_color(cards[0].color)
             if not other1:
                 other1 = other2
                 other2 = []
