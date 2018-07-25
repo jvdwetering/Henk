@@ -1,8 +1,8 @@
 from cards import *
 from klaverjas_ai import AI as BaseAI, BasePlayer
-from klaverjas_aiJohn import AI as AIJohn
-from klaverjas_ai2 import AI as AI1
-from klaverjas_ai3 import AI as AI2
+from klaverjas_ai2 import AI as AI0
+from klaverjas_ai3 import AI as AI1
+from klaverjas_ai4 import AI as AI2
 import random
 
 seed = "uihgwrkftd"  # AI gooit aas weg aan de tegenstander
