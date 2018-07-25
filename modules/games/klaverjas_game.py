@@ -376,17 +376,22 @@ class KlaverjasChallenge(BaseDispatcher):
 
     def __init__(self, bot, game_id, msg):
         super().__init__(bot, game_id, msg)
-        self.players = OrderedDict({self.sender_id: self.sender_name})
+        self.players = OrderedDict({1:"Henk",self.sender_id: self.sender_name})
         self.seed = ''.join(random.choice(string.ascii_lowercase) for _ in range(10))
         self.games = {}
-        self.save_game_state()
-        index = len(self.bot.dataManager.games)
-        g = Klaverjas(self.bot,index,list(self.players.items()),self.date, self.seed)
-        self.bot.games[index] = g
-        g.final_callback = self.game_end
-        self.games = {self.sender_id: g}
         self.unveiled = False
         self.loaded = True
+        self.save_game_state()
+        for d in [[],[(self.sender_id,self.sender_name)]]:
+            index = len(self.bot.dataManager.games)
+            g = Klaverjas(self.bot,index,d,self.date, self.seed)
+            self.bot.games[index] = g
+            g.final_callback = self.game_end
+            if d: self.games[d[0][0]] = g
+            else: self.games[1] = g
+
+        self.update_message()
+        
         self.save_game_state()
         
 
@@ -465,7 +470,7 @@ class KlaverjasChallenge(BaseDispatcher):
         self.update_message()
 
     def message_init(self):
-        txt = "{}\n*{}: Bezig met spelen".format(self.welcome, self.sender_name)
+        txt = "{}\n*Henk: Bezig met spelen\n*{}: Bezig met spelen".format(self.welcome, self.sender_name)
         self.ident = self.send_keyboard_message(self.chat_id, txt, self.buttons, self.callback)
 
 
