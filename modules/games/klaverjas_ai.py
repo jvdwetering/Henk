@@ -15,7 +15,6 @@ class BasePlayer(object):
         self.index = index
         self.name = ["Henk", "Ingrid", "Klaas", "Bert"][index]
         self.silent = False
-        self.printer = pp
         self.reset()
 
     def reset(self):
@@ -33,14 +32,14 @@ class BasePlayer(object):
         self.unknown_cards[2].owner = (3 + index) % 4
         self.mystery_cards = create_deck()
         self.mate_prefered_colors = []
-
+        
     def pp(self, s, index=-1):
-        if self.silent: return
-        if index == -1:
-            self.printer("{}: {}".format(self.name, s))
-        else:
-            if self.index == index:
-                self.printer("{}: {}".format(self.name,s))
+    	if self.silent: return
+    	if index == -1:
+    		self.printer("{}: {}".format(self.name, s))
+    	else:
+    		if self.index == index:
+    			self.printer("{}: {}".format(self.name,s))
 
     def hand_string(self):
         colors = [[],[],[],[]]

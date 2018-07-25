@@ -458,36 +458,36 @@ class AI(BasePlayer):
                             val = 1
                             col = color
                     else:
-                        self.pp("We play a naked Ten")
-                        return filt.has(TEN)
+                        self.pp("We play a naked Ten if guaranteed we will win")
+                        if self.will_win_this_round(played_cards) == True:
+                        	return filt.has(TEN)
                         
                 else:
                     if filt.has(ACE):
                     	if len(filt) > 3: #We have A 10 x x
-                    		val = 5
-                    		col = color
+                    		if self.will_win_this_round(played_cards) == True:
+                    			val = 5
+                    			col = color
                     	elif len(filt) == 3: #We have A 10 x
                     		if filt.has(SEVEN) or filt.has(EIGHT) or filt.has(NINE):
                     			if val < 4:
                     				val = 4
                     				col = color
-                    		else: #We have A 10 K/Q/J
-                    			if val < 3:
-                    				val = 3
-                    				col = color
+                    			else: #We have A 10 K/Q/J
+                    				if self.will_win_this_round(played_cards) == True:
+                    					if val < 3:
+                    						val = 3
+                    						col = color
                     		
                     else: #we have a card below the Ten
-                        if val < 2:
-                            val = 2
-                            col = color
+                    	if self.will_win_this_round(played_cards) == True:
+                    		if val < 2:
+                    			val = 2
+                    			col = color
         if val == 5:
-            self.pp("We have the ace, a ten and two other of a color.")
-            if self.will_win_this_round(played_cards) == True:
-            	self.pp("We know we will win, so I can safely throw the Ace")
-            	return self.cards.filter_color(col).has(ACE)
-            else:
-            	self.pp("We might not win. Better not risk playing the Ace")
-            	val = 0
+        	self.pp("We have the ace, a ten and two other of a color.")
+        	self.pp("We know we will win, so I can safely throw the Ace")
+        	return self.cards.filter_color(col).has(ACE)
             
         elif val == 4:
         	self.pp("We have the ace, a ten, and a small one of a color. Play the small one")
@@ -500,18 +500,13 @@ class AI(BasePlayer):
         		
         elif val == 3:
         	self.pp("We have the ATK.")
-        	if self.will_win_this_round(played_cards) == True:
-        		self.pp("We know we will win. I can safely play the ace") 
-        		return self.cards.filter_color(col).has(ACE)
-        	else:
-        		self.pp("We might lose, Better not risk playing the Ace")
-        		val = 0
+        	self.pp("We know we will win. I can safely play the ace") 
+        	return self.cards.filter_color(col).has(ACE)
         	
         elif val > 0:
             self.pp("We have a Ten.")
-            if self.will_win_this_round(Cards(played_cards)) == True:
-            	self.pp("We know we will win. I can safely play the Ten")
-            	return self.cards.filter_color(col).has(TEN)
+            self.pp("We know we will win. I can safely play the Ten")
+            return self.cards.filter_color(col).has(TEN)
             	
         self.pp("We don't have a playable Ten.")
 
