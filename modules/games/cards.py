@@ -180,6 +180,13 @@ class Cards(list):
         '''Returns a new Cards object with only trumps'''
         return Cards([a for a in self if a.is_trump])
 
+    def pretty(self):
+        s= ""
+        for color in range(4):
+            vals = ", ".join([short_valuenames[v] for v in self.cards.filter_color(color).values()])
+            s += "{} {}\n".format(suit_to_unicode[color], vals)
+        return s.strip()
+
 def card_points(cards, trump=None):
     val = 0
     for c in cards:

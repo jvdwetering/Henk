@@ -15,6 +15,7 @@ class BasePlayer(object):
         self.index = index
         self.name = ["Henk", "Ingrid", "Klaas", "Bert"][index]
         self.silent = False
+        self.printer = pp
         self.reset()
 
     def reset(self):
@@ -30,6 +31,7 @@ class BasePlayer(object):
         self.unknown_cards[0].owner = (1 + index) % 4
         self.unknown_cards[1].owner = (2 + index) % 4
         self.unknown_cards[2].owner = (3 + index) % 4
+        self.unknown_colours = [list(range(4))]*3
         self.mystery_cards = create_deck()
         self.mate_prefered_colors = []
         
@@ -93,7 +95,7 @@ class BasePlayer(object):
         return False
 
     def is_high(self, card):
-        '''returns wether card is the highest one of that color'''
+        '''returns whether card is the highest one of that colour'''
         for d in self.unknown_cards:
             if card.owner == d.owner: continue
             filt = d.higher_then(card)
@@ -139,7 +141,7 @@ class AI(BasePlayer):
     def pick_trump(self):
         maxval = 0
         picked = 0
-        for color in range(4): #we go trough every color and assign a value to them
+        for color in range(4): #we go trough every colour and assign a value to them
             cards = self.cards.filter_color(color)
             values = cards.values()
             val = 0
@@ -180,12 +182,16 @@ class AI(BasePlayer):
         color = cards[0].color
         p = cards[0].owner
         glory = glory_calculation(cards,self.trump)
+        location = [i for i,c in enumerate(cards) if c.owner == self.index][0]
 
         def remove_all_in_color(index, color, exceptions=[]):
             if index == self.index: return
             d = self.index_to_deck(index)
             for cc in  [a for a in d if (a.color == color and a.value not in exceptions)]:
                 d.remove(cc)
+            if not exceptions:
+                i = (index-1-self.index)%4
+                if color in self.unknown_colours[i]: self.unknown_colours[i].remove(color)
         
         if p != self.index: #we did not start this round
             d = self.index_to_deck(p)
@@ -223,11 +229,32 @@ class AI(BasePlayer):
                         self.mate_prefered_colors.append(m.color)
                         self.pp("Mate signed card color")
                 elif m.value in (QUEEN, KING, TEN): #mate is de-signing the color
-                    if m.color not in self.mate_prefered_colors: #if it was already signed, ignore this
-                        if len(self.mate_prefered_colors) == 0:
+                    if m.color in self.mate_prefered_colors:
+                    	if len(self.mate_prefered_colors) == 2: #if it was already signed, ignore this
+                    		self.mate_prefered_colors.remove(m.color)
+                    if len(self.mate_prefered_colors) == 0:
                             self.mate_prefered_colors = list(range(4))
                             self.mate_prefered_colors.remove(self.trump)
                             self.mate_prefered_colors.remove(m.color)
+
+                            
+        if location == 1 and highest_card(cards).owner == self.index: #we are in second position and have won
+        	m = cards[3]
+        	if m.color != color and m.color != self.trump: #mate didn't confess color and didn't trump
+        		if m.value in (SEVEN, EIGHT, NINE, ACE): #mate is signing
+        			if m.color not in self.mate_prefered_colors:
+        				self.mate_prefered_colors.append(m.color)
+        				self.pp("Mate signed card color")
+        		elif m.value in (QUEEN, KING, TEN): #mate is de-signing the color
+        			if m.color in self.mate_prefered_colors:
+        				if len(self.mate_prefered_colors) == 2:
+        					self.mate_prefered_colors.remove(m.color) 
+        			if len(self.mate_prefered_colors) == 0:
+        				self.mate_prefered_colors = list(range(4))
+        				self.mate_prefered_colors.remove(self.trump)
+        				self.mate_prefered_colors.remove(m.color)
+        			
+        				
                     
         if color == self.trump: #trump asked
             highest = cards[0]
@@ -297,10 +324,13 @@ class AI(BasePlayer):
                     elif SEVEN in values and NINE in values:
                         remove_all_in_color(cards[3].owner, color, [EIGHT])
                     else:
-                        remove_all_in_color(cards[3].owner, color)
-            
-                                    
+                        remove_all_in_color(cards[3].owner, color)                 
         self.remove_known_cards(cards)
+        if self.round == 6:
+            poss = len(list(self.generate_all_distributions(self.round,[])))
+            if not poss:
+                pass
+                #TODO: Recalculate possible card distributions
 
     def remove_known_cards(self, cards):
         for deck in self.unknown_cards:
@@ -322,6 +352,32 @@ class AI(BasePlayer):
         self.discarded.append(card)
         card.owner = self.index
         return card
+
+    def will_win_this_round(self, played_cards):
+    	cards_played = played_cards
+    	"""Returns whether we are absolutely certain to win this round, regardless of what we will play."""
+    	if not cards_played: return False
+    	h = highest_card(cards_played)
+    	if h.owner != self.partner: return False
+    	if len(cards_played) == 3: return True #Only us left to play
+    	color = cards_played[0].color
+    	is_trumped = h.color == self.trump
+    	notyetplayed = list(range(4))
+    	notyetplayed.remove(self.index)
+    	for c in cards_played: notyetplayed.remove(c.owner)
+    	# Since we are assuming that our partner is currently winning
+    	# And we are not last to play, there is exactly one other player that
+    	# needs to play a card
+    	p = notyetplayed[0]
+    	d = self.index_to_deck(p) # Possible cards in hand of the player
+    	if is_trumped: #winning card is trump
+    		if d.higher_then(h): return False # Person could overtrump
+    		else: return True
+    	if d.filter_color(self.trump): return False # Person could trump in
+    	if d.higher_then(h): return False
+    	return True
+
+
 
     def pick_non_trump(self):
         '''Pick a non-trump card to start a round with'''
@@ -391,6 +447,7 @@ class AI(BasePlayer):
     def sign_mate(self):
         '''Pick a card to trow away at your mate (like he is going to win)'''
         self.pp("We pick a card to give to our mate")
+        played_cards = self.played_cards
         val = 0
         col = -1
         for color in range(4):
@@ -403,23 +460,57 @@ class AI(BasePlayer):
                             val = 1
                             col = color
                     else:
-                        self.pp("We play a naked Ten")
-                        return filt.has(TEN)
+                        self.pp("We play a naked Ten if guaranteed we will win")
+                        if self.will_win_this_round(played_cards) == True:
+                        	return filt.has(TEN)
+                        
                 else:
                     if filt.has(ACE):
-                        val = 3
-                        col = color
+                    	if len(filt) > 3: #We have A 10 x x
+                    		if self.will_win_this_round(played_cards) == True:
+                    			val = 5
+                    			col = color
+                    	elif len(filt) == 3: #We have A 10 x
+                    		if filt.has(SEVEN) or filt.has(EIGHT) or filt.has(NINE):
+                    			if val < 4:
+                    				val = 4
+                    				col = color
+                    			else: #We have A 10 K/Q/J
+                    				if self.will_win_this_round(played_cards) == True:
+                    					if val < 3:
+                    						val = 3
+                    						col = color
+                    		
                     else: #we have a card below the Ten
-                        if val < 2:
-                            val = 2
-                            col = color
-        if val == 3:
-            self.pp("We have the ace and a ten of a color. Play the Ace")
-            return self.cards.filter_color(col).has(ACE)
+                    	if self.will_win_this_round(played_cards) == True:
+                    		if val < 2:
+                    			val = 2
+                    			col = color
+        if val == 5:
+        	self.pp("We have the ace, a ten and two other of a color.")
+        	self.pp("We know we will win, so I can safely throw the Ace")
+        	return self.cards.filter_color(col).has(ACE)
+            
+        elif val == 4:
+        	self.pp("We have the ace, a ten, and a small one of a color. Play the small one")
+        	if self.cards.filter_color(col).has(NINE):
+        		return self.cards.filter_color(col).has(NINE)
+        	elif self.cards.filter_color(col).has(EIGHT):
+        		return self.cards.filter_color(col).has(EIGHT)
+        	else:
+        		return self.cards.filter_color(col).has(SEVEN)
+        		
+        elif val == 3:
+        	self.pp("We have the ATK.")
+        	self.pp("We know we will win. I can safely play the ace") 
+        	return self.cards.filter_color(col).has(ACE)
+        	
         elif val > 0:
-            self.pp("We have a Ten. Play it")
+            self.pp("We have a Ten.")
+            self.pp("We know we will win. I can safely play the Ten")
             return self.cards.filter_color(col).has(TEN)
-        self.pp("We don't have a Ten.")
+            	
+        self.pp("We don't have a playable Ten.")
 
         aces = self.cards.filter_value(ACE)
         if aces: lowest = aces[0]
@@ -461,20 +552,25 @@ class AI(BasePlayer):
             return sorted(self.cards.filter_color(colors[0]))[0]
         if len(colors) == 0:
             raise NotImplementedError("We only have trumps, shouldn't call this function")
+        poss = Cards()
         for color in colors:
             filt = self.cards.filter_color(color)
             if len(filt) >= 4:
                 self.pp("We trow away the lowest card of the color we have the most of")
                 return sorted(filt)[0]
-            if not filt.has(TEN):
-                self.pp("We don't have a Ten in this color, so it's safe to trow a card away there")
-                return sorted(filt)[0]
+            if filt.has(TEN) and not self.is_high(filt.has(TEN)): continue
+            filt = filt.filter(lambda c: c.value not in (TEN, ACE))
+            poss.extend(filt)
+        if poss:
+            self.pp("Trowing away a low card in a colour that doesn't have a low TEN")
+            return sorted(poss)[0]
         self.pp("We have a Ten in every playable color. Play a card in one of them")
-        return sorted(self.cards.filter_color(colors[0]))[0]
+        return sorted(self.cards.filter(self.is_not_trump))[0]
             
 
     def play_card(self, rnum, played_cards):
         played_cards = Cards(played_cards)
+        self.played_cards = played_cards
         self.round = rnum
         legal = self.legal_cards(played_cards)
         if len(legal) == 1:
@@ -628,6 +724,7 @@ class AI(BasePlayer):
                             return self.play_this_card(filt.sorted()[0])
                         else:
                             self.pp("we can't win, play a low card")
+                            #TODO: make exceptions
                             c, glory = self.maxmin_glory(played_cards, maximize = False)
                             return self.play_this_card(c)
                 else: #we are not the last one to play in this round
