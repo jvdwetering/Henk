@@ -1,6 +1,8 @@
 from cards import *
 from klaverjas_ai import AI as BaseAI, BasePlayer
-from klaverjas_ai2 import AI as NewAI
+from klaverjas_ai2 import AI as AI0
+from klaverjas_ai3 import AI as AI1
+from klaverjas_ai4 import AI as AI2
 import random
 
 seed = "uihgwrkftd"  # AI gooit aas weg aan de tegenstander
@@ -64,7 +66,49 @@ def performance_test(ai_class1, ai_class2=BaseAI, ngames=1000):
     print("\nTotal games played:", ngames)
     print("Average score: {!s} vs {!s}".format(tpoints1/ngames, tpoints2/ngames))
     print("Percentage gehaald: ", (1-tnat/ngames)*100)
-    return tpoints1, tpoints2, tnat
+    tpointsd = tpoints1-tpoints2
+    return (tpoints1, tpoints2, tnat, tpointsd)
+    
+def performance_compare(ai_class1, ai_class2, ai_class3):
+	game1 = performance_test(ai_class1, ai_class3)
+	game2 = performance_test(ai_class3, ai_class1)
+	game3 = performance_test(ai_class2, ai_class3)
+	game4 = performance_test(ai_class3, ai_class2)
+	print("Aanvallend heeft AI 1", game1[2], "keer nat en", game1[3], "punten verschil.")
+	print("Verdedigend heeft AI 1", game2[2], "keer nat en", game2[3], "punten verschil.")
+	print("Aanvallend heeft AI 2", game3[2], "keer nat en", game3[3], "punten verschil.")
+	print("Verdedigend heeft AI 2", game4[2], "keer nat en", game4[3], "punten verschil.\n")
+	
+	if game1[2]>game3[2]:
+		print("Aanvallend is AI 2 is ", game1[2]-game3[2],"keer minder vaak nat gegaan")
+	elif game1[2]<game3[2]:
+		print("Aanvallend is AI 1 is ", game3[2]-game1[2],"keer minder vaak nat gegaan")
+	elif game1[2]==game3[2]:
+		print("Aanvallend zijn AI 1 en AI 2 even vaak nat gegaan")
+		
+	if game1[3]>game3[3]:
+		print("Aanvallend heeft AI 1 ", game1[3]-game3[3],"meer puntenverschil weten te behalen")
+	elif game1[3]<game3[3]:
+		print("Aanvallend heeft AI 2 ", game3[3]-game1[3],"meer puntenverschil weten te behalen")
+	elif game1[3]==game3[3]:
+		print("Aanvallend hebben AI 1 en AI 2 exact hetzelfde puntenverschil behaald. Wonderlijk.")
+		
+	if game2[2]>game4[2]:
+		print("Verdedigend is AI 2 is ", game2[2]-game4[2],"keer minder vaak nat gegaan")
+	elif game2[2]<game4[2]:
+		print("Verdedigend is AI 1 is ", game4[2]-game2[2],"keer minder vaak nat gegaan")
+	elif game2[2]==game4[2]:
+		print("Verdedigend zijn AI 1 en AI 2 even vaak nat gegaan")
+		
+	if game2[3]>game4[3]:
+		print("Verdedigend heeft AI 1 ", game2[3]-game4[3],"meer puntenverschil weten te behalen")
+	elif game2[3]<game4[3]:
+		print("Verdedigend heeft AI 2 ", game4[3]-game2[3],"meer puntenverschil weten te behalen")
+	elif game2[3]==game4[3]:
+		print("Verdedigend hebben AI 1 en AI 2 exact hetzelfde puntenverschil behaald. Magistraal.")
+	
+	
+	return "succes"
     
 def find_divergent_game(ai_class1, ai_class2):
     '''Looks for a game where the first class did at least 20 points worse than the second class'''
@@ -84,8 +128,10 @@ def find_divergent_game(ai_class1, ai_class2):
         s2 = g2.points1 - g2.points2
         if s1 < s2-20:
             print("\nseed: ", seed)
+            #return g1,g2 
+            game_diff(g1,g2)
             return g1,g2
-        
+                    
 def game_diff(g1, g2):
     '''Gives the first divergence point of two given games'''
     msg = "{} ({!s}) {!s} | {!s} ({!s})    vs  {} ({!s}) {!s} | {!s} ({!s})\n".format(
@@ -104,7 +150,7 @@ def game_diff(g1, g2):
     msg += "\n\nGame 2:\n"
     msg += g2.pretty_round(i)
     msg += g2.chatter[i]
-    return msg
+    print(msg)
     
 
 
@@ -332,6 +378,6 @@ def raw_input_card(s):
 ##if __name__ == '__main__':
 ##    g = Game(seed=seed, players=[BaseAI,BaseAI,BaseAI,BaseAI])
 ##    g.play_game()
-if __name__ == '__main__':
-    g1, g2 = find_divergent_game(NewAI, BaseAI)
-    print(game_diff(g1,g2))
+#if __name__ == '__main__':
+#    g1, g2 = find_divergent_game(NewAI, BaseAI)
+#    print(game_diff(g1,g2))
