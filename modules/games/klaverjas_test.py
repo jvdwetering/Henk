@@ -77,30 +77,30 @@ def performance_compare(ai_class1, ai_class2, ai_class3):
         game4 = game3
     else: game4 = performance_test(ai_class3, ai_class2)
     print("Aanvallend heeft AI 1", game1[2], "keer nat en", game1[3], "punten verschil.")
-    print("Verdedigend heeft AI 1", game2[2], "keer nat en", game2[3], "punten verschil.")
+    print("Verdedigend heeft AI 1 de ander", game2[2], "keer nat gespeeld en", game2[3], "punten verschil gemaakt.")
     print("Aanvallend heeft AI 2", game3[2], "keer nat en", game3[3], "punten verschil.")
-    print("Verdedigend heeft AI 2", game4[2], "keer nat en", game4[3], "punten verschil.\n")
+    print("Verdedigend heeft AI 2 de ander", game4[2], "keer nat gespeeld en", game4[3], "punten verschil gemaakt.\n")
     
     if game1[2]>game3[2]:
-        print("Aanvallend is AI 2 ", game1[2]-game3[2],"keer minder vaak nat gegaan")
+        print("Aanvallend is AI 2", game1[2]-game3[2],"keer minder vaak nat gegaan")
     elif game1[2]<game3[2]:
-        print("Aanvallend is AI 1 ", game3[2]-game1[2],"keer minder vaak nat gegaan")
+        print("Aanvallend is AI 1", game3[2]-game1[2],"keer minder vaak nat gegaan")
     elif game1[2]==game3[2]:
         print("Aanvallend zijn AI 1 en AI 2 even vaak nat gegaan")
         
     if game1[3]>game3[3]:
-        print("Aanvallend heeft AI 1 ", game1[3]-game3[3],"meer puntenverschil weten te behalen")
+        print("Aanvallend heeft AI 1", game1[3]-game3[3],"meer puntenverschil weten te behalen")
     elif game1[3]<game3[3]:
-        print("Aanvallend heeft AI 2 ", game3[3]-game1[3],"meer puntenverschil weten te behalen")
+        print("Aanvallend heeft AI 2", game3[3]-game1[3],"meer puntenverschil weten te behalen")
     elif game1[3]==game3[3]:
         print("Aanvallend hebben AI 1 en AI 2 exact hetzelfde puntenverschil behaald. Wonderlijk.")
         
     if game2[2]>game4[2]:
-        print("Verdedigend is AI 2 ", game2[2]-game4[2],"keer minder vaak nat gegaan")
+        print("Verdedigend heeft AI 2 de ander", game2[2]-game4[2],"keer minder vaak nat gespeeld")
     elif game2[2]<game4[2]:
-        print("Verdedigend is AI 1 ", game4[2]-game2[2],"keer minder vaak nat gegaan")
+        print("Verdedigend heeft AI 1 de ander", game4[2]-game2[2],"keer minder vaak nat gespeeld")
     elif game2[2]==game4[2]:
-        print("Verdedigend zijn AI 1 en AI 2 even vaak nat gegaan")
+        print("Verdedigend hebben AI 1 en AI 2 de ander even vaak nat gespeeld")
         
     if game2[3]>game4[3]:
         print("Verdedigend heeft AI 1 ", game2[3]-game4[3],"meer puntenverschil weten te behalen")
