@@ -19,11 +19,11 @@ class BasePlayer(object):
         self.reset()
 
     def reset(self):
-        self.partner = None
-        self.cards = Cards()
-        self.discarded = Cards()
-        self.trump = None
-        self.is_playing = False
+        self.partner = None # Index of player on your team
+        self.cards = Cards() # Current cards in your hand
+        self.discarded = Cards() # Cards you have trown out of your hand
+        self.trump = None # The suite of Trump
+        self.is_playing = False # Wether we are the 'attacking' team.
         #We wan't to record what the possible cards are for every player
         self.unknown_cards = [create_deck(), create_deck(), create_deck()]
         #possible_cards[0] is the player next, [1] is our mate, and [2] is the player before us
@@ -31,8 +31,8 @@ class BasePlayer(object):
         self.unknown_cards[0].owner = (1 + index) % 4
         self.unknown_cards[1].owner = (2 + index) % 4
         self.unknown_cards[2].owner = (3 + index) % 4
-        self.unknown_colours = [list(range(4))]*3
-        self.mystery_cards = create_deck()
+        self.unknown_colours = [list(range(4))]*3 # The possible colours every player might have
+        self.mystery_cards = create_deck() # The cards still in play that we don't have
         self.mate_prefered_colors = []
         
     def pp(self, s, index=-1):

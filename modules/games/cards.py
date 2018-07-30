@@ -143,8 +143,8 @@ class Cards(list):
     def filter(self, func):
         return Cards(filter(func, self))
 
-    def sorted(self):
-        self.sort()
+    def sorted(self,*args,**kwargs):
+        self.sort(*args,**kwargs)
         return self
 
     def filter_color(self, color):

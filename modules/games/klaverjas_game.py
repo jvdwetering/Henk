@@ -95,7 +95,7 @@ class Klaverjas(BaseGame):
         return "Troef gekozen"
     def message_pick_trump(self, player):
         msg = player.hand_string() + "\nKies troef"
-        self.send_keyboard_message(player.user_id, msg, [suit_to_unicode[i] for i in range(4)], self._trump_set)
+        self.send_keyboard_message(player.user_id, msg, ["  {}  ".format(suit_to_unicode[i]) for i in range(4)], self._trump_set)
         self.save_game_state()
     
 
@@ -115,8 +115,12 @@ class Klaverjas(BaseGame):
         return "Kaart gekozen"
 
     def message_play_card(self, player):
-        self.playable_cards = player.legal_cards(self.cards_this_round)
-        self.playable_cards.sort(reverse=True)
+        legal = player.legal_cards(self.cards_this_round)
+        self.playable_cards = legal.get_trumps().sorted(reverse=True)
+        suits = list(range(4))
+        suits.remove(self.trump)
+        for col in suits:
+            self.playable_cards.extend(legal.filter_color(col).sorted(reverse=True))
         buttons = [card.pretty() for card in self.playable_cards]
         self.send_keyboard_message(player.user_id, "Kies een kaart", buttons, self._card_picked)
         self.save_game_state()
