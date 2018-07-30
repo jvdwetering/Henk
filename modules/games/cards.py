@@ -183,7 +183,7 @@ class Cards(list):
     def pretty(self):
         s= ""
         for color in range(4):
-            vals = ", ".join([short_valuenames[v] for v in self.cards.filter_color(color).values()])
+            vals = ", ".join([short_valuenames[v] for v in self.filter_color(color).values()])
             s += "{} {}\n".format(suit_to_unicode[color], vals)
         return s.strip()
 

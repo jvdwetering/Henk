@@ -1,6 +1,6 @@
 from cards import *
 from klaverjas_ai import AI as BaseAI, BasePlayer
-from klaverjas_ai2 import AI as AI0
+from klaverjas_ai_old import AI as AI0
 #from klaverjas_ai3 import AI as AI1
 #from klaverjas_ai4 import AI as AI2
 import random
@@ -26,8 +26,6 @@ def test_trump_choice(seed):
     print("Chosen " + colornames[trump])
 
 import time
-
-#from game import Game
 
 def time_test():
     #import cards
@@ -119,13 +117,15 @@ def find_divergent_game(ai_class1, ai_class2):
         if n%100 == 0:
             print(n, end='. ')
         seed = random.randint(1000000,2000000)
-        g1 = Game(silent=2, seed=seed, players=players1)
+        random.seed(seed)
+        g1 = Game(silent=2, seed=seed, players=players1, cancelpoints=False)
         g1.play_game()
-        g2 = Game(silent=2, seed=seed, players=players2)
+        random.seed(seed)
+        g2 = Game(silent=2, seed=seed, players=players2, cancelpoints=False)
         g2.play_game()
         s1 = g1.points1 - g1.points2
         s2 = g2.points1 - g2.points2
-        if s1 < s2-20:
+        if s1 < s2-30:
             print("\nseed: ", seed)
             #return g1,g2 
             game_diff(g1,g2)
