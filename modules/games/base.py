@@ -29,13 +29,15 @@ class BaseGame(object):
         if self.final_callback: self.final_callback(self)
 
 
-    def send_user_message(self, msg, user_id=None):
+    def send_user_message(self, msg, user_id=None, parse_mode=None):
         '''Send msg to user_id. If user_id is None, it sends the message to all the players'''
         if user_id:
-            self.bot.telebot.sendMessage(user_id, msg)
+            if not parse_mode: self.bot.telebot.sendMessage(user_id, msg)
+            else: self.bot.telebot.sendMessage(user_id, msg, parse_mode=parse_mode)
             return
         for i in self.player_names:
-            self.bot.telebot.sendMessage(i, msg)
+            if not parse_mode: self.bot.telebot.sendMessage(i, msg)
+            else: self.bot.telebot.sendMessage(i, msg, parse_mode=parse_mode)
 
     def get_keyboard(self, buttons, index):
         options = []
