@@ -1,6 +1,7 @@
 from cards import *
 from klaverjas_ai import AI as BaseAI, BasePlayer
-from klaverjas_ai_old import AI as AI0
+from klaverjas_ai2 import AI as AI0
+#from klaverjas_ai_old import AI as AI0
 #from klaverjas_ai3 import AI as AI1
 #from klaverjas_ai4 import AI as AI2
 import random
@@ -27,14 +28,13 @@ def test_trump_choice(seed):
 
 import time
 
-def time_test():
+def time_test(ai=BaseAI):
     #import cards
     #cards.PRINT = False
     t = time.time()
     for i in range(100):
-        g = Game(silent = 2)
+        g = Game(silent=2, players=[ai]*4)
         g.should_pause = False
-        g.initialize()
         g.play_game()
 
     delta = time.time() - t
@@ -59,7 +59,7 @@ def performance_test(ai_class1, ai_class2=BaseAI, ngames=1000):
         tpoints2 += g.points2
         if g.points1 <= g.points2:
             tnat += 1
-        if i%100 == 0:
+        if i%(ngames//10) == 0:
             print(i, end='. ')
     print("\nTotal games played:", ngames)
     print("Average score: {!s} vs {!s}".format(tpoints1/ngames, tpoints2/ngames))
@@ -374,9 +374,11 @@ def raw_input_card(s):
         card = Card(value, color)
         return card
 
-##if __name__ == '__main__':
-##    g = Game(seed=seed, players=[BaseAI,BaseAI,BaseAI,BaseAI])
-##    g.play_game()
+if __name__ == '__main__':
+    #seed = 17419590
+    seed = 1004
+    g = Game(seed=seed, players=[AI0]*4)
+    g.play_game()
 #if __name__ == '__main__':
 #    g1, g2 = find_divergent_game(NewAI, BaseAI)
 #    print(game_diff(g1,g2))

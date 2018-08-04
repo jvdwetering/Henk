@@ -1,11 +1,7 @@
 if __package__ is None or __package__ == '':
-    from cards import JACK, NINE, ACE, TEN, QUEEN, KING, EIGHT, SEVEN
-    from cards import (create_deck, highest_card, colornames, valuenames,
-                        pp, Card, Cards, glory_calculation, fake_card, cmp)
+    from cards import *
 else:
-    from .cards import JACK, NINE, ACE, TEN, QUEEN, KING, EIGHT, SEVEN
-    from .cards import create_deck, highest_card, colornames, valuenames
-    from .cards import pp, Card, Cards, glory_calculation, fake_card, cmp
+    from .cards import *
 
 import random
 import itertools
@@ -21,16 +17,22 @@ class BasePlayer(object):
     def reset(self):
         self.partner = None # Index of player on your team
         self.cards = Cards() # Current cards in your hand
-        self.discarded = Cards() # Cards you have trown out of your hand
+        self.discarded = Cards() # Cards you have thrown out of your hand
+        self.points1 = 0 # Points of the attacking team
+        self.points2 = 0 # Points of the defending team
         self.trump = None # The suite of Trump
-        self.is_playing = False # Wether we are the 'attacking' team.
+        self.is_playing = False # Whether we are the 'attacking' team.
         #We want to record what the possible cards are for every player
         self.unknown_cards = [create_deck(), create_deck(), create_deck()]
-        #possible_cards[0] is the player next, [1] is our mate, and [2] is the player before us
+        #unknown_cards[0] is the player next, [1] is our mate, and [2] is the player before us
         index = self.index
         self.unknown_cards[0].owner = (1 + index) % 4
         self.unknown_cards[1].owner = (2 + index) % 4
         self.unknown_cards[2].owner = (3 + index) % 4
+        for i,d in enumerate(self.unknown_cards):
+            j = (index+i+1)%4
+            d.owner = j
+            for c in d: c.owner = j
         self.unknown_colours = [list(range(4))]*3 # The possible colours every player might have
         self.mystery_cards = create_deck() # The cards still in play that we don't have
         self.prefered_colors = {} # Dictionary containing information about which colors are desirable to play
@@ -191,7 +193,7 @@ class AI(BasePlayer):
     def has_trump(self,val):
         return bool(self.cards.get_trumps().has(val))
 
-
+    # TODO: Still contains a bug with trumps
     def show_trick(self,cards, round):
         '''Here we analyze the played cards, and try to conclude some information
         on the hands of the players'''
@@ -199,6 +201,10 @@ class AI(BasePlayer):
         p = cards[0].owner
         glory = glory_calculation(cards,self.trump)
         h = highest_card(cards, self.trump)
+        points = card_points(cards)
+        if self.player_is_playing(h.owner):
+            self.points1 += points + glory
+        else: self.points2 += points + glory
 
         self.remove_known_cards(cards)
 
@@ -270,7 +276,7 @@ class AI(BasePlayer):
                     else: #didn't overtrump, remove those possibilities
                         if c.owner == self.index: continue
                         d = self.index_to_deck(c.owner)
-                        rem = [a for a in d if (a.color == self.trump and a > c)]
+                        rem = [a for a in d if (a.color == self.trump and a > highest)]
                         if rem == d.filter_color(self.trump):
                             remove_all_in_color(c.owner, self.trump)
                         else:
@@ -282,7 +288,7 @@ class AI(BasePlayer):
         else: #not a trump asked
             highest = cards[0]
             for c in cards[1:]:
-                if c > highest: highest = c
+                if c.color in (highest.color, self.trump) and c>highest: highest = c
                 if c.color != color: #couldn't confess color
                     if c.owner == self.index: continue
                     remove_all_in_color(c.owner, color)
@@ -615,6 +621,9 @@ class AI(BasePlayer):
         if len(legal) == 1:
             self.pp("Only one legal card to play")
             return self.play_this_card(legal[0])
+        if self.round >= 6 or (self.round == 5 and len(played_cards)==3):
+            c = self.do_minmax()
+            if c: return self.play_this_card(c)
         trumps = self.cards.get_trumps().sorted()
         non_trumps = self.cards.filter(self.is_not_trump).sorted()
         if not played_cards:
@@ -845,6 +854,64 @@ class AI(BasePlayer):
             return [c1,c2,c3]
 
 
+    def do_minmax(self, amount=None):
+        self.pp("Minmaxing")
+        options = {c:list() for c in self.legal_cards(self.played_cards)}
+        self.remove_known_cards(self.played_cards)
+        if self.round < 6:
+            maxcount = 100//len(options) if not amount else amount
+        else:
+            maxcount = 200//len(options) if not amount else amount
+        distributions = []
+        count = 0 
+        for i,d in enumerate(self.generate_all_distributions(self.round, self.played_cards)):
+            distributions.append(d)
+            count += 1
+            if count>500: break
+        if count == 0:
+            self.pp("No valid distributions")
+            return None
+        if count>500:
+            self.pp("Too many distributions, picking randomly")
+            distributions = [self.generate_distribution(self.round,self.played_cards) for i in range(maxcount)]
+        elif count>maxcount:
+            self.pp("{!s} distributions, taking a subset".format(count))
+            skipvalue = (count-1)//maxcount + 1
+            distributions = [d for i,d in enumerate(distributions) if i%skipvalue == 0]
+        else:
+            self.pp("Evaluating {!s} possibilities".format(count))
+        
+        players = []
+        p = DummyPlayer(self.index, self.is_playing, self.trump, Cards(self.cards))
+        players.append(p)
+        for i in range(3):
+            index = (self.index+i+1)%4
+            p = DummyPlayer(index, self.player_is_playing(index), self.trump, Cards())
+            players.append(p)
+        players.sort(key=lambda p: p.index)
+        for hands in distributions:
+            for i,hand in enumerate(hands):
+                players[(self.index+i+1)%4].cards = Cards(hand)
+            m = MinMaxer(players, self.trump, self.points1, self.points2, 
+                         self.index, self.round, Cards(self.played_cards))
+            for c in options:
+                m2 = m.copy()
+                m2.progress_game(c)
+                points1, points2 = m2.do_minmax()
+                points = points1 - points2 if self.is_playing else points2 - points1
+                options[c].append(points)
+
+        best_card = None
+        best_score = -500
+        for c,l in options.items():
+            avg = sum(l)/len(l)
+            self.pp("Minmax: {} has average score of {:.2f}".format(c.pretty(),avg))
+            if avg > best_score:
+                best_card = c
+                best_score = avg
+        return best_card
+
+
     def glory_possibility(self, card):
         '''Returns wether there is still a chance this card can produce glory'''
         color = card.color
@@ -957,4 +1024,122 @@ class AI(BasePlayer):
                 elif g == glory and c < best:
                     best = c
             return (best, glory)
+
+
+
+class DummyPlayer(object):
+    def __init__(self, index, is_playing, trump, cards):
+        self.index = index
+        self.partner = (index+2)%4
+        self.is_playing = is_playing
+        self.trump = trump
+        self.cards = cards
+
+    def copy(self):
+        return DummyPlayer(self.index, self.is_playing, self.trump, Cards(self.cards))
+
+    def legal_cards(self, played_cards):
+        if not played_cards: return self.cards #first to play, everything is legal
+        played_cards = Cards(played_cards)
+        color = played_cards[0].color
+        played_trumps = played_cards.filter_color(self.trump)
+        highest = highest_card(played_cards)
+        if highest.owner == None:
+            raise KeyError("Played card doesn't have owner")
+        winning = (highest.owner == self.partner)
+        cards = self.cards.filter_color(color)
+        if cards: #we can confess colour
+            if color != self.trump: return cards #no trumps so no restrictions
+            #must not undertrump
+            higher = [t for t in cards if t>highest]
+            if higher: return higher # We must overtrump
+            return cards
+        trumps = self.cards.get_trumps()
+        if not trumps: return self.cards # Don't have any trumps so everything is legal
+        if not played_trumps and not winning: return trumps # We aren't winning and we have trumps, so we must play one of those
+        higher = [t for t in trumps if t>highest]
+        if higher and not winning: return higher # We must overtrump
+        c = self.cards.filter(lambda c: c.color!=self.trump) #Any card except trumps
+        c.extend(higher)
+        if c: return c
+        return self.cards #we can't overtrump, but we only have trumps so we need to play them.
+
+
+
+class MinMaxer(object):
+    def __init__(self, players, trump, points1, points2, currentplayer, round, played_cards):
+        self.players = players
+        self.round = round
+        self.played_cards = played_cards
+        self.currentplayer = currentplayer
+        self.trump = trump
+        self.points1 = points1
+        self.points2 = points2
+
+    def copy(self):
+        players = [p.copy() for p in self.players]
+        return MinMaxer(players, self.trump, self.points1, self.points2, 
+                        self.currentplayer, self.round, Cards(self.played_cards))
+
+    def progress_game(self,c):
+        self.players[self.currentplayer].cards.remove(c)
+        self.played_cards.append(c)
+        if len(self.played_cards) != 4:
+            self.currentplayer = (self.currentplayer + 1)%4
+            return
+        cards = self.played_cards
+        h = highest_card(cards,self.trump)
+        winner = h.owner 
+        points = card_points(cards, self.trump)
+        glory = glory_calculation(cards, self.trump)
+        if self.players[winner].is_playing: 
+            self.points1 += points + glory
+            if self.round == 8: self.points1 += 10
+        else: 
+            self.points2 += points + glory
+            if self.round == 8: self.points2 += 10
+        
+        if self.round == 8:
+            if self.points1 == 0:
+                self.points2 += 100
+            if self.points2 == 0:
+                self.points1 += 100
+
+        self.currentplayer = winner
+        self.round += 1
+        self.played_cards = Cards()
+
+    def do_minmax(self):
+        while True:
+            p = self.players[self.currentplayer]
+            options = p.legal_cards(self.played_cards)
+            #print(self.round, self.currentplayer, options, [len(p.cards) for p in self.players])
+            if len(options) == 1:
+                self.progress_game(options[0])
+            else:
+                break
+            if self.round > 8:
+                return self.points1, self.points2
+
+        #best_card = None
+        best_score = -500
+        p1, p2 = 0, 0
+        for c in options:
+            m = self.copy()
+            #print("Going deeper")
+            #print(self.round, self.currentplayer, [len(p.cards) for p in m.players])
+            m.progress_game(c)
+            points1, points2 = m.do_minmax()
+            if p.is_playing: points = points1 - points2
+            else: points = points2 - points1
+            if points > best_score:
+                best_score = points
+                #best_card = c
+                p1 = points1
+                p2 = points2
+
+        return p1, p2
+
+
+
 

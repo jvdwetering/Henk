@@ -79,7 +79,6 @@ class Card(object):
         self.index = self.color*8+self.value
         self.owner = None
         self.is_trump = False
-        self.point_value = 0
 
     def __str__(self):
         return "Card({}, {})".format(valuenames[self.value],colornames[self.color])
@@ -104,6 +103,9 @@ class Card(object):
 
     def __eq__(self, other):
         return (self.color == other.color and self.value == other.value)
+
+    def __hash__(self):
+        return hash(self.index)
 
 def fake_card():
     return Card(FAKE, FAKE)
