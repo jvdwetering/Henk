@@ -14,6 +14,7 @@ import math
 import json
 import urllib3
 from collections import OrderedDict
+import threading
 
 import difflib
 
@@ -37,6 +38,7 @@ class Henk(object):
         self.dataManager = ManageData() #interface to the database
         if isdummy: self.dataManager.dummy = True
         self.should_exit = False
+        self.messagelock = threading.Lock()
 
         self.querycounts = {} #counts how many times I've said a thing lately
         self.lastupdate = 0 #how long it has been since I've updated querycounts
@@ -123,7 +125,8 @@ class Henk(object):
             module.initialise(self)
 
     def sendMessage(self, chat_id, s):
-        m = self.telebot.sendMessage(chat_id, s)
+        with self.messagelock:
+            m = self.telebot.sendMessage(chat_id, s)
         if probaccept(0.7): self.active = True
         else: self.active = False
         return m

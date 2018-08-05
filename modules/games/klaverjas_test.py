@@ -375,8 +375,7 @@ def raw_input_card(s):
         return card
 
 if __name__ == '__main__':
-    #seed = 17419590
-    seed = 1004
+    seed = "kncfeyxwil"
     g = Game(seed=seed, players=[AI0]*4)
     g.play_game()
 #if __name__ == '__main__':

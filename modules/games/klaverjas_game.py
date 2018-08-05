@@ -1,6 +1,8 @@
 import random
 import string
 from collections import OrderedDict
+import threading
+import time
 
 import telepot
 
@@ -134,17 +136,12 @@ class Klaverjas(BaseGame):
                 index_to_card[c.owner] = c.pretty()
             msg += "```\n{}\n".format(self.p3.name.rjust(12))
             msg += index_to_card[self.p3.index].rjust(10) + "\n"
-            msg += self.p2.name.ljust(12) + self.p4.name.rjust(10) + "    \n"
+            msg += self.p2.name.ljust(12) + self.p4.name.rjust(8) + "    \n"
             msg += index_to_card[self.p2.index].center(4).ljust(12)
-            msg += index_to_card[self.p4.index].center(len(self.p4.name)-1).rjust(6)
+            msg += index_to_card[self.p4.index].center(len(self.p4.name)-1).rjust(4)
             msg += "\n" + self.p1.name.rjust(12) + "\n"
             msg += index_to_card[self.p1.index].rjust(10) + "\n"
             msg += "\n```"
-            # for i in range(4):
-            #     p = self.players[self.cards_previous_round[i].owner]
-            #     if p.index%2 == 0: msg += "*"
-            #     msg += "{}: {}\n".format(p.name, self.cards_previous_round[i].pretty())
-            #     if p.index%2 == 0: msg += "*"
             winner = highest_card(self.cards_previous_round,self.trump).owner
             #glory = glory_calculation(self.cards_previous_round, self.trump)
             if self.glory_previous_round > 0: 
@@ -164,13 +161,12 @@ class Klaverjas(BaseGame):
             msg += index_to_card[self.p3.index].rjust(10) + "\n"
         else:
             msg += "\n"
-        msg += self.p2.name.ljust(12) + self.p4.name.rjust(10) + "       \n"
+        msg += self.p2.name.ljust(12) + self.p4.name.rjust(8) + "    \n"
         if self.p2.index in index_to_card:
             msg += index_to_card[self.p2.index].center(4).ljust(12)
         else: msg += " "*13
         if self.p4.index in index_to_card:
-            msg += index_to_card[self.p4.index].center(len(self.p4.name)-1).rjust(6)
-        else: msg += " "*12
+            msg += index_to_card[self.p4.index].center(len(self.p4.name)-1).rjust(4)
         msg += "\n" + self.p1.name.rjust(12) + "\n"
         if self.p1.index in index_to_card:
             msg += index_to_card[self.p1.index].rjust(10) + "\n"
@@ -198,17 +194,19 @@ class Klaverjas(BaseGame):
         #     if self.glory == -1: msg += " "
 
         if not self.status_messages:
-            for p in self.real_players:
-                sent = self.bot.telebot.sendMessage(p.user_id, msg, parse_mode="Markdown")
-                ident = telepot.message_identifier(sent)
-                self.status_messages.append(ident)
+            self.status_messages = self.send_user_message(msg, parse_mode="Markdown")
+            #for p in self.real_players:
+                #sent = self.bot.telebot.sendMessage(p.user_id, msg, parse_mode="Markdown")
+                #ident = telepot.message_identifier(sent)
+                #self.status_messages.append(ident)
         else:
             for ident in self.status_messages:
-                editor = telepot.helper.Editor(self.bot.telebot, ident)
-                try:
-                    editor.editMessageText(msg, parse_mode="Markdown")
-                except telepot.exception.TelegramError:
-                    pass
+                self.edit_message_text(ident, msg, parse_mode="Markdown")
+                # editor = telepot.helper.Editor(self.bot.telebot, ident)
+                # try:
+                #     editor.editMessageText(msg, parse_mode="Markdown")
+                # except telepot.exception.TelegramError:
+                #     pass
 
 
     def _accept_glory(self,ident, button_id, user):
@@ -293,10 +291,10 @@ class Klaverjas(BaseGame):
         self.round += 1
 
         if progress_game:
+            time.sleep(1.25)
             self.progress_game()
         
-
-    def progress_game(self):
+    def _progress_game_thread(self):
         '''When the cards have been dealt and trump has been chosen, tries to progress the game
         until it hits a point where user input is required.'''
         while self.round<=8:
@@ -305,11 +303,23 @@ class Klaverjas(BaseGame):
                 self.message_play_card(self.players[self.currentplayer])
                 return
 
+            self.update_status_message()
+            t = time.time()
             self.cards_this_round.append(self.players[self.currentplayer].play_card(self.round, self.cards_this_round.copy()))
+            delta = time.time() - t
+            if delta < 0.75:
+                time.sleep(0.75-delta)
             self.currentplayer = (self.currentplayer+1)%4
             if self.currentplayer == self.startingplayer:
+                self.update_status_message()
                 self.process_round(progress_game=True)
                 return
+
+    def progress_game(self):
+        '''When the cards have been dealt and trump has been chosen, tries to progress the game
+        until it hits a point where user input is required.'''
+        t = threading.Thread(target=self._progress_game_thread)
+        t.start()
     
     def game_end_message(self):
         msg = "Klaverjas potje met seed {}\n".format(self.seed)
@@ -434,12 +444,13 @@ class KlaverjasChallenge(BaseDispatcher):
             g.final_callback = self.game_end
             if d: self.games[d[0][0]] = g
             else: self.games[1] = g
-        self.update_message()
+        #self.update_message()
         self.save_game_state()
 
     def __getstate__(self):
         state = super().__getstate__()
-        state['games'] = {pid: g.game_id for pid,g in self.games.items()}
+        if self.games and not isinstance(list(self.games.keys())[0],int):
+            state['games'] = {pid: g.game_id for pid,g in self.games.items()}
         state['loaded'] = False
         return state
 

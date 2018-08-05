@@ -1,4 +1,5 @@
 import pickle
+import threading
 
 import telepot
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
@@ -22,6 +23,8 @@ class BaseGame(object):
                             # ident = (chat_id, message_id)
 
         self.final_callback = None
+
+        self._lock = bot.messagelock
         #self.save_game_state()
 
     def game_ended(self):
@@ -31,13 +34,26 @@ class BaseGame(object):
 
     def send_user_message(self, msg, user_id=None, parse_mode=None):
         '''Send msg to user_id. If user_id is None, it sends the message to all the players'''
-        if user_id:
-            if not parse_mode: self.bot.telebot.sendMessage(user_id, msg)
-            else: self.bot.telebot.sendMessage(user_id, msg, parse_mode=parse_mode)
-            return
-        for i in self.player_names:
-            if not parse_mode: self.bot.telebot.sendMessage(i, msg)
-            else: self.bot.telebot.sendMessage(i, msg, parse_mode=parse_mode)
+        with self._lock:
+            if user_id:
+                if not parse_mode: sent = self.bot.telebot.sendMessage(user_id, msg)
+                else: sent = self.bot.telebot.sendMessage(user_id, msg, parse_mode=parse_mode)
+                return telepot.message_identifier(sent)
+            idents = []
+            for i in self.player_names:
+                if not parse_mode: sent = self.bot.telebot.sendMessage(i, msg)
+                else: sent = self.bot.telebot.sendMessage(i, msg, parse_mode=parse_mode)
+                idents.append(telepot.message_identifier(sent))
+            return idents
+
+    def edit_message_text(self, ident, msg, parse_mode=None):
+        editor = telepot.helper.Editor(self.bot.telebot, ident)
+        with self._lock:
+            try:
+                if parse_mode: editor.editMessageText(msg, parse_mode=parse_mode)
+                else: editor.editMessageText(msg)
+            except telepot.exception.TelegramError:
+                pass
 
     def get_keyboard(self, buttons, index):
         options = []
@@ -47,40 +63,34 @@ class BaseGame(object):
 
     def send_keyboard_message(self, chat_id, text, buttons, callback):
         keyboard = self.get_keyboard(buttons, len(self.callbacks))
-        sent = self.bot.telebot.sendMessage(chat_id, text, reply_markup=keyboard)
+        with self._lock:
+            sent = self.bot.telebot.sendMessage(chat_id, text, reply_markup=keyboard)
         ident = telepot.message_identifier(sent)
         self.callbacks.append((ident, callback))
         return ident
 
     def disable_keyboard(self, ident):
         editor = telepot.helper.Editor(self.bot.telebot, ident)
-        editor.editMessageReplyMarkup()
-        self.bot.telebot.deleteMessage(ident)
+        with self._lock:
+            editor.editMessageReplyMarkup()
+            self.bot.telebot.deleteMessage(ident)
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        try:
-            del state['bot']
-        except KeyError:
-            pass
+        try: del state['bot']
+        except KeyError: pass
+        try: del state['_lock']
+        except KeyError: pass
         return state
 
     def setstate(self, bot):
         self.bot = bot
+        self._lock = bot.messagelock
 
     def save_game_state(self):
-        self.bot.dataManager.add_game(self.game_type,self.game_id,pickle.dumps(self),self.date, self.is_active)
+        with self._lock:
+            self.bot.dataManager.add_game(self.game_type,self.game_id,pickle.dumps(self),self.date, self.is_active)
 
-
-# def gamestarter(parent, bot, index, gameclass, maxplayers, sender, chat, welcome, cmd):
-#     options = []
-#     buttons = ["join/unjoin", "start"]
-#     for i,o in enumerate(buttons):
-#         options.append(InlineKeyboardButton(text=o,callback_data="gamestart{}:{}".format(str(index),str(i))))
-#     keyboard = InlineKeyboardMarkup(inline_keyboard=[options])
-#     sent = bot.telebot.sendMessage(chat, welcome+"\n*"+sender[1], reply_markup=keyboard)
-#     ident = telepot.message_identifier(sent)
-#     return StartManager(parent, bot, gameclass, maxplayers, sender, ident, keyboard, welcome, cmd)
 
 class BaseDispatcher(BaseGame):
     def __init__(self, bot, game_id, msg):
