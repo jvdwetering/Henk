@@ -18,26 +18,17 @@ KLAVERJASSEN_CHALLENGE = 102
 
 class Klaverjas(BaseGame):
     game_type = KLAVERJASSEN
-    def __init__(self, bot, game_id, players, date, cmd):
-        if isinstance(players, list):
-            super().__init__(bot, game_id, players, date, cmd)
-            self.real_players = []
-            for user_id,user_name in players:
-                p = RealPlayer(self, user_id,user_name, len(self.real_players))
-                self.real_players.append(p)
-            self.players = self.real_players.copy()
-            self.startingplayer = 0
-        elif isinstance(players, tuple):
-            user_id, user_name, position = players
-            super().__init__(bot, game_id, [(user_id,user_name)], date, cmd)
-            p = RealPlayer(self, user_id, user_name, 0)
-            self.real_players = [p]
-            self.players = [p]
-            self.startingplayer = position
-
+    def __init__(self, bot, game_id, players, date, cmd, startingplayer=0):
+        super().__init__(bot, game_id, players, date, cmd)
+        self.real_players = []
+        for user_id,user_name in players:
+            p = RealPlayer(self, user_id,user_name, len(self.real_players))
+            self.real_players.append(p)
+        self.players = self.real_players.copy()
         for i in range(len(self.real_players),4):
             self.players.append(AI(i))
 
+        self.startingplayer = startingplayer
         self.callbacks_disposed = []
 
         self.initialize()
@@ -447,9 +438,9 @@ class KlaverjasChallenge(BaseDispatcher):
             self.scores[pid] = (0,0)
         n = self.games_finished[pid]
         if pid != 1:
-            g = Klaverjas(self.bot,index,(pid,name,n), self.date, self.seeds[n])
+            g = Klaverjas(self.bot,index,[(pid,name)], self.date, self.seeds[n], startingplayer=n%4)
         else:
-            g = Klaverjas(self.bot,index,[], self.date, self.seeds[n])
+            g = Klaverjas(self.bot,index,[], self.date, self.seeds[n], startingplayer=n%4)
         self.bot.games[index] = g
         g.final_callback = self.game_end
         self.games[pid] = g
