@@ -508,7 +508,7 @@ class KlaverjasChallenge(BaseDispatcher):
             else:
                 if self.unveiled:
                     if self.ngames == 1: msg += "*{}: {}\n".format(name, self.games[sender_id].summarize())
-                    else: l.append("*{}: {!s} vs {!s}".format(self.scores[sender_id][0],self.scores[sender_id][1]))
+                    else: msg += "*{}: {!s} vs {!s}\n".format(name, self.scores[sender_id][0],self.scores[sender_id][1])
                 else:
                     msg += "{}: Klaar (score verborgen)\n".format(name)
         editor = telepot.helper.Editor(self.bot.telebot, self.ident)
