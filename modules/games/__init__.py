@@ -23,6 +23,7 @@ class Games(Module):
     def register_commands(self, bot):
         bot.add_slash_command("klaverjassen", self.klaverjassen)
         bot.add_slash_command("klaverchallenge", self.klaverchallenge)
+        bot.add_slash_command("klaverchallenge4", self.klaverchallenge4)
         #bot.add_callback_query("gamestart", self.callbackstart)
         bot.add_callback_query("games", self.callback)
 
@@ -37,6 +38,11 @@ class Games(Module):
     def klaverchallenge(self, bot, msg):
         ident = len(bot.dataManager.games)
         g = KlaverjasChallenge(bot, ident, msg)
+        bot.games[ident] = g
+
+    def klaverchallenge4(self, bot, msg):
+        ident = len(bot.dataManager.games)
+        g = KlaverjasChallenge(bot, ident, msg, ngames=4)
         bot.games[ident] = g
 
     def callback(self, bot, msg):
