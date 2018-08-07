@@ -154,10 +154,11 @@ def game_diff(g1, g2):
 
 
 class Game(object):
-    def __init__(self, silent=0, seed=None,players=[], cancelpoints=True):
+    def __init__(self, silent=0, seed=None,players=[], cancelpoints=True,startingplayer=0):
         self.should_pause = True if silent < 2 else False
         self.silent = silent
         self.cancelpoints = cancelpoints # whether points should be added to other team in case of wet
+        self.startingplayer = startingplayer
         self.chatter = []
         if not seed: self.seed = random.randint(10000000,20000000)
         else: self.seed = seed
@@ -198,13 +199,17 @@ class Game(object):
         self.p3.set_partner(self.p1.index)
         self.p2.set_partner(self.p4.index)
         self.p4.set_partner(self.p2.index)
-        self.p1.is_playing = True
-        self.p3.is_playing = True
+        if self.startingplayer in (0,2):
+            self.p1.is_playing = True
+            self.p3.is_playing = True
+        else:
+            self.p2.is_playing = True
+            self.p4.is_playing = True
         self.points1 = 0
         self.points2 = 0
         self.pointsglory1 = 0
         self.pointsglory2 = 0
-        self.currentplayer = 0
+        self.currentplayer = self.startingplayer
 
         self.give_cards()
         if self.silent < 2: pp("Player 1 hand:\n%s" % self.players[0].hand_string())
@@ -224,7 +229,7 @@ class Game(object):
             if self.silent < 2: pp("Glory! %d points" % glory)
         n = winner
         if self.silent < 2: pp("Player %d wins this round with a %s" % (n+1, str(h)))
-        if n == 0 or n == 2:
+        if self.players[n].is_playing:
             self.pointsglory1 += glory
             self.points1 += points + glory
             if self.round == 8: self.points1 += 10
@@ -254,7 +259,7 @@ class Game(object):
         
 
     def play_game(self):
-        self.trump = self.players[0].pick_trump()
+        self.trump = self.players[self.startingplayer].pick_trump()
         if self.silent < 2: pp("Player 1 has chosen trump %s" % colornames[self.trump])
         [self.players[i].set_trump(self.trump) for i in range(4)]
         for i in range(8):
@@ -263,14 +268,14 @@ class Game(object):
                 s = input(">> ")
                 if s=="q":
                     break
-
-        if self.silent < 2:
-            pp("Score: \nTeam 1: %d points\nTeam 2: %d points" % (self.points1, self.points2))
         
         if self.points2 == 0: 
             if self.silent < 2: pp("Pit!")
             self.pointsglory1 += 100
             self.points1 += 100
+
+        if self.silent < 2:
+            pp("Score: \nTeam 1: %d points\nTeam 2: %d points" % (self.points1, self.points2))
 
         if self.points1 < self.points2:
             if self.silent < 2: pp("Wet")
@@ -375,8 +380,8 @@ def raw_input_card(s):
         return card
 
 if __name__ == '__main__':
-    seed = "kncfeyxwil"
-    g = Game(seed=seed, players=[AI0]*4)
+    seed = "pbvepmtsth"
+    g = Game(seed=seed, players=[AI0]*4, startingplayer=2)
     g.play_game()
 #if __name__ == '__main__':
 #    g1, g2 = find_divergent_game(NewAI, BaseAI)

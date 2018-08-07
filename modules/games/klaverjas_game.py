@@ -16,6 +16,8 @@ KLAVERJASSEN_CHALLENGE = 102
 
 #seed for potje met roem op eerste slag: ulonrloyfp
 
+def dummy_printer(s): pass
+
 class Klaverjas(BaseGame):
     game_type = KLAVERJASSEN
     def __init__(self, bot, game_id, players, date, cmd, startingplayer=0):
@@ -26,7 +28,9 @@ class Klaverjas(BaseGame):
             self.real_players.append(p)
         self.players = self.real_players.copy()
         for i in range(len(self.real_players),4):
-            self.players.append(AI(i))
+            p = AI(i)
+            p.printer = dummy_printer
+            self.players.append(p)
 
         self.startingplayer = startingplayer
         self.callbacks_disposed = []

@@ -154,8 +154,8 @@ class AI(BasePlayer):
             if l == 1: val = -10
             if l == 2: val = 10
             if l == 3: val = 20
-            if l == 4: val = 40
-            if l > 4: val = 70
+            if l == 4: val = 30
+            if l > 4: val = 60
             if JACK in values:
                 val += 25
                 if NINE in values: val += 25
@@ -519,7 +519,7 @@ class AI(BasePlayer):
                 if len(filt) == 1:
                     if self.is_high(Card(TEN,color)):
                         if val < 1 and self.will_win_this_round(played_cards):
-                            val = 1
+                            val = 0
                             col = color
                 else:
                     if filt.has(ACE):
@@ -540,17 +540,24 @@ class AI(BasePlayer):
                             
                     else: #we have a card below the Ten
                         if self.will_win_this_round(played_cards):
-                            if val < 2:
-                                val = 2
+                            if val < 1:
+                                val = 1
                                 col = color
+            elif filt.has(ACE): # ACE but no TEN
+                if filt.has(SEVEN) or filt.has(EIGHT) or filt.has(NINE):
+                    if val < 3:
+                        val = 3
+                        col = color
+
         if val == 5:
             self.pp("We have the ace, a ten and two other of a color.")
             self.pp("We know we will win, so I can safely throw the Ace")
             self.signed_colors[col] = 1
             return self.cards.filter_color(col).has(ACE)
             
-        elif val == 4:
-            self.pp("We have the ace, a ten, and a small one of a color. Play the small one")
+        elif val == 3 or val == 4:
+            if val == 4: self.pp("We have the ace, a ten, and a small one of a color. Play the small one")
+            elif val == 3: self.pp("Signal ACE, by playing small card")
             self.signed_colors[col] = 1
             if self.cards.filter_color(col).has(NINE):
                 return self.cards.filter_color(col).has(NINE)
@@ -666,9 +673,11 @@ class AI(BasePlayer):
 
             n = len(self.unknown_cards[0].get_trumps())
             m = len(self.unknown_cards[2].get_trumps())
-            if n!=0 and m!=0 and trumps and not self.unknown_cards[1].get_trumps(): #we want to trade 2 for 1
+            mate_trumps = len(self.unknown_cards[1].get_trumps())
+            if n!=0 and m!=0 and trumps and not mate_trumps: #we want to trade 2 for 1
                 if len(trumps)>1 or not trumps.has(NINE): # More than one trump, or otherwise we have something lower than the nine
                     self.pp("Mate doesn't have trump, so we try to draw out 2 trumps of the opponent")
+                    if high_trumps: return self.play_this_card(high_trumps[0])
                     options = [c for c in trumps if not self.glory_possibility(c)]
                     if options: return self.play_this_card(sorted(options)[0])
                     else: return self.play_this_card(sorted(trumps)[0])
@@ -676,8 +685,8 @@ class AI(BasePlayer):
             if self.is_playing:
                 self.pp("We are playing this game")
                 if n + m != 0:
-                    self.pp("The other team might still have trumps")
-                    if high_trumps:
+                    if high_trumps and (len(trumps)>1 or not mate_trumps):
+                        self.pp("The other team might still have trumps")
                         return self.play_this_card(high_trumps[0])
                     if len(trumps) > 1:
                         filt = [c for c in trumps if not self.glory_possibility(c) and c.value!=NINE]
@@ -692,7 +701,7 @@ class AI(BasePlayer):
                         poss = [c for c in trumps if self.glory_possibility(c)]
                         if poss: return self.play_this_card(poss[0])
                         else: return self.play_this_card(sorted(trumps)[0])
-                    self.pp("No high trumps, play something else")
+                    self.pp("No good trump play, playing non-trump")
                     return self.play_this_card(self.pick_non_trump())
                 self.pp("Other team doesn't have trumps, so play non trump")
                 return self.play_this_card(self.pick_non_trump())
@@ -820,7 +829,7 @@ class AI(BasePlayer):
                         self.pp("we are not winning this round, try to still win")
                         filt = Cards([c for c in possibilities if c>highest])
                         if filt:
-                            self.pp("we can win with a card.")
+                            self.pp("we can win with a card")
                             c, glory = self.maxmin_glory(played_cards, deck=filt)
                             if glory:
                                 self.pp("And we can make glory! do it")
@@ -863,8 +872,22 @@ class AI(BasePlayer):
                         return self.play_this_card(filt[-1])
                     else:
                         #TODO: Do a check for not wasting a TEN or ACE
+                        
+                        if len(played_cards) == 1:
+                            if possibilities.has(TEN): possibilities.remove(Card(TEN, played_cards[0].color))
+                        if len(played_cards) == 2 and possibilities.has(TEN):
+                            no_glory = Cards([c for c in possibilities if not glory_calculation(played_cards+[c],self.trump)])
+                            if no_glory.has(TEN):
+                                if len(no_glory) == 1:
+                                    self.pp("Only way to dodge glory is trowing away our TEN")
+                                    return self.play_this_card(no_glory.has(TEN))
+                                no_glory.remove(Card(TEN, played_cards[0].color))
+                            if no_glory:
+                                possibilities = no_glory
+                            else: # Glory any case, let the optimizer decide
+                                pass
                         self.pp("we can't win, play a low card")
-                        c, glory = self.maxmin_glory(played_cards, maximize=False)
+                        c, glory = self.maxmin_glory(played_cards, maximize=False, deck=possibilities)
                         return self.play_this_card(c)
 
         raise NotImplementedError("Ahhhh, shouldn't get here!")
