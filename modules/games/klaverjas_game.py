@@ -14,7 +14,9 @@ KLAVERJASSEN = 100
 KLAVERJASSEN_DISPATCH = 101
 KLAVERJASSEN_CHALLENGE = 102
 
-klaverjas_names = ["Ingrid", "Klaas", "Bert", "Fatima", "Piet", "Joop", "Els", "Sjaan", "Achmed", "Bob", "Bep", "Kim"]
+klaverjas_names = ["Ingrid", "Klaas", "Bert", "Fatima", "Piet", "Joop", "Els", "Sjaan", "Achmed", "Bob", "Bep", "Kim",
+                   "Rico", "Benny", "Serena", "Amalia", "D'Shawn", "Jezus", "Sterre", "Denise", "Aagje", "Edith", "Renate",
+                   "Ling", "Yusuf"]
 
 #seed for potje met roem op eerste slag: ulonrloyfp
 
@@ -22,7 +24,7 @@ def dummy_printer(s): pass
 
 class Klaverjas(BaseGame):
     game_type = KLAVERJASSEN
-    def __init__(self, bot, game_id, players, date, cmd, startingplayer=0):
+    def __init__(self, bot, game_id, players, date, cmd, startingplayer=0, should_initialize=True):
         super().__init__(bot, game_id, players, date, cmd)
         self.real_players = []
         for user_id,user_name in players:
@@ -37,8 +39,16 @@ class Klaverjas(BaseGame):
         self.startingplayer = startingplayer
         self.callbacks_disposed = []
 
-        self.initialize()
+        if should_initialize: 
+            self.initialize()
         self.save_game_state()
+
+    def __getstate(self):
+        state = super().__getstate()
+        try:
+            del state['final_callback']
+        except KeyError: pass
+        return state
         
     def give_cards(self):
         self.deck = create_deck()
@@ -165,7 +175,7 @@ class Klaverjas(BaseGame):
         for c in self.cards_this_round:
             index_to_card[c.owner] = c.pretty()
         if count != 4:
-            index_to_card[self.currentplayer] = "  ..."
+            index_to_card[self.currentplayer] = "  ...  "
         msg += "```\n{}\n".format(self.p3.name.rjust(12))
         if self.p3.index in index_to_card:
             msg += index_to_card[self.p3.index].rjust(10) + "\n"
@@ -174,7 +184,7 @@ class Klaverjas(BaseGame):
         msg += self.p2.name.ljust(12) + self.p4.name.rjust(8) + "    \n"
         if self.p2.index in index_to_card:
             msg += index_to_card[self.p2.index].center(4).ljust(12)
-        else: msg += " "*13
+        else: msg += " "*14
         if self.p4.index in index_to_card:
             msg += index_to_card[self.p4.index].center(len(self.p4.name)-1).rjust(4)
         msg += "\n" + self.p1.name.rjust(12) + "\n"
@@ -369,6 +379,7 @@ class KlaverjasDispatcher(BaseDispatcher):
         super().__init__(bot, game_id, msg)
         self.players = [(self.sender_id,self.sender_name)]
         self.started = False
+        self.game_index = None
         self.save_game_state()
 
     def message_init(self):
@@ -400,6 +411,7 @@ class KlaverjasDispatcher(BaseDispatcher):
             g = Klaverjas(self.bot,index,self.players,self.date, self.cmd)
             g.final_callback = self.game_end
             self.bot.games[index] = g
+            self.game_index = index
             editor = telepot.helper.Editor(self.bot.telebot, self.ident)
             editor.editMessageReplyMarkup()
             return "Spel gestart"
@@ -433,7 +445,7 @@ class KlaverjasChallenge(BaseDispatcher):
         self.scores = {}
         self.gamestrings = {}
         self.unveiled = False
-        self.loaded = True
+        
         self.save_game_state()
         for pid,name in self.players.items():
             self.start_game(pid,name)
@@ -448,10 +460,11 @@ class KlaverjasChallenge(BaseDispatcher):
             self.gamestrings[pid] = ""
         n = self.games_finished[pid]
         if pid != 1:
-            g = Klaverjas(self.bot,index,[(pid,name)], self.date, self.seeds[n], startingplayer=n%4)
+            g = Klaverjas(self.bot,index,[(pid,name)], self.date, self.seeds[n], startingplayer=n%4, should_initialize=False)
         else:
-            g = Klaverjas(self.bot,index,[], self.date, self.seeds[n], startingplayer=n%4)
+            g = Klaverjas(self.bot,index,[], self.date, self.seeds[n], startingplayer=n%4, should_initialize=False)
         for i,p in enumerate(g.players[1:]): p.name = self.ai_names[i]
+        g.initialize()
         self.bot.games[index] = g
         g.final_callback = self.game_end
         self.games[pid] = g
@@ -469,11 +482,12 @@ class KlaverjasChallenge(BaseDispatcher):
             if isinstance(self.games[pid], Klaverjas): continue
             g = self.bot.dataManager.load_game(self.games[pid])
             g.setstate(self.bot)
+            g.final_callback = self.game_end
             self.games[pid] = g
         self.loaded = True
 
     def callback(self, ident, button_id, s):
-        if not hasattr(self, "loaded") or not self.loaded: self.load()
+        #if not hasattr(self, "loaded") or not self.loaded: self.load()
         sender, sendername = s
         if button_id == 0:
             if sender in self.players:
@@ -502,11 +516,11 @@ class KlaverjasChallenge(BaseDispatcher):
     def player_stats(self, pid):
         name = self.players[pid]
         s1, s2 = self.scores[pid]
-        s = "*{}:{:+d} ({:d} vs {:d}) ".format(name, s1-s2, s1, s2) + self.gamestrings[pid]
+        s = "*{}: {:+d} ({:d} vs {:d}) ".format(name, s1-s2, s1, s2) + self.gamestrings[pid]
         return s
 
     def generate_unveil_message(self):
-        if not self.loaded: self.load()
+        #if not self.loaded: self.load()
         l = []
         for sid, name in self.players.items():
             if self.games_finished[sid] == self.ngames:
@@ -517,7 +531,7 @@ class KlaverjasChallenge(BaseDispatcher):
         return msg
 
     def update_message(self):
-        if not hasattr(self, "loaded") or not self.loaded: self.load()
+        #if not hasattr(self, "loaded") or not self.loaded: self.load()
         msg = self.welcome +"\n" 
         for sender_id, name in self.players.items():
             if self.games_finished[sender_id] != self.ngames:

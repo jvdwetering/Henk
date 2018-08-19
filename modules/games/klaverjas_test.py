@@ -42,6 +42,64 @@ def time_test(ai=BaseAI):
     print("Took %.2f seconds" % delta)
     #cards.PRINT = True
 
+def j9test():
+    iterations=10000
+    tscore = [0,0]
+    tglory = [0,0]
+    for i in range(iterations*2):
+        h = [Card(JACK, CLUBS), Card(NINE, CLUBS), Card(TEN, CLUBS)]
+        for c in h: c.is_trump = True
+        d = []
+        for col in range(1,4):
+            d.extend([Card(j, col) for j in range(8)])
+        random.shuffle(d)
+        for j in range(5):
+            c = d.pop()
+            c.is_trump = True
+            h.append(c)
+        d.extend([Card(SEVEN, CLUBS), Card(EIGHT, CLUBS), Card(ACE, CLUBS),
+                   Card(QUEEN, CLUBS), Card(KING, CLUBS)])
+        for c in d:
+            if c.color == 0: c.is_trump = True
+        random.shuffle(d)
+        p1 = AI0(0)
+        p1.printer = lambda x: 0
+        p1.give_cards(Cards(h))
+        players = [p1]
+        for j in range(3):
+            p = AI0(j+1)
+            p.printer = lambda x: 0
+            p.give_cards(Cards([d.pop() for _ in range(8)]))
+            players.append(p)
+        p1, p2, p3, p4 = players
+        p1.set_partner(p3.index)
+        p3.set_partner(p1.index)
+        p2.set_partner(p4.index)
+        p4.set_partner(p2.index)
+        p1.is_playing = True
+        p3.is_playing = True
+        [p.set_trump(0) for p in players]
+        cards = Cards([h.pop(i%2)])
+        for j in range(1,4):
+            p = players[j]
+            cards.append(p.play_card(1, cards))
+        #print(cards)
+        points = card_points(cards, 0)
+        glory = glory_calculation(cards, 0)
+        tscore[i%2] += points
+        tglory[i%2] += glory
+        for p in players:
+            p.show_trick(cards, 1)
+        cards = Cards([h.pop(0)])
+        for j in range(1,4):
+            p = players[j]
+            cards.append(p.play_card(2, cards))
+        #print(cards)
+        points = card_points(cards, 0)
+        glory = glory_calculation(cards, 0)
+        tscore[i%2] += points
+        tglory[i%2] += glory
+    return [v/iterations for v in tscore], [v/iterations for v in tglory]
 
 def performance_test(ai_class1, ai_class2=BaseAI, ngames=1000):
     seed = 500
@@ -381,10 +439,10 @@ def raw_input_card(s):
         card = Card(value, color)
         return card
 
-if __name__ == '__main__':
-    seed = "vcgezwlmaq"
-    g = Game(seed=seed, players=[RealPlayer] + [AI0]*3, startingplayer=2)
-    g.play_game()
+##if __name__ == '__main__':
+##    seed = "vcgezwlmaq"
+##    g = Game(seed=seed, players=[RealPlayer] + [AI0]*3, startingplayer=2)
+##    g.play_game()
 #if __name__ == '__main__':
 #    g1, g2 = find_divergent_game(NewAI, BaseAI)
 #    print(game_diff(g1,g2))

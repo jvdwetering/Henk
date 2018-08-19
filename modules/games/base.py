@@ -15,6 +15,7 @@ class BaseGame(object):
             self.player_names[user_id] = user_name
         self.date = date
         self.cmd = cmd
+        self.loaded = False
 
         #self.current_users = [] # The list of user_ids for which the game is waiting for input.
 
@@ -26,6 +27,9 @@ class BaseGame(object):
 
         self._lock = bot.messagelock
         #self.save_game_state()
+
+    def load(self):
+        self.loaded = True
 
     def game_ended(self):
         self.is_active = False

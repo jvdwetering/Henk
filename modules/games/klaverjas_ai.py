@@ -593,7 +593,7 @@ class AI(BasePlayer):
             filt = self.cards.filter_color(color)
             if len(filt) == 1 and len(self.mystery_cards.filter_color(color))>5 and filt[0].value in (JACK, QUEEN, KING):
                 self.pp("Give glory sensitive solo card")
-                self.signed_colors[col]=-1
+                self.signed_colors[color]=-1
                 return filt[0]
 
         aces = self.cards.filter_value(ACE)
