@@ -361,6 +361,16 @@ class AI(BasePlayer):
                             remove_all_in_color(cards[3].owner, color, [EIGHT])
                         else:
                             remove_all_in_color(cards[3].owner, color)
+
+        for i, c in enumerate(cards[1:]):
+            if c.owner == self.index: continue
+            if c.color != color and c.value in (TEN, ACE) and c != highest and self.index_to_mate(c.owner) != highest.owner:
+                mate = (c.owner+1-self.index)%4
+                if i == 2 or (mate!=3 and color not in self.unknown_colours[mate]) or (color not in self.cards.colors()):
+                    self.pp("Person threw away valuable card to opponent, must not have lower cards to play")
+                    for col in range(4):
+                        if col == self.trump: continue
+                        remove_all_in_color(c.owner, col, [TEN, ACE])
         
         # If the possible cards of a player exactly match how many cards they should have,
         # we remove those possibilities from other players
@@ -552,7 +562,7 @@ class AI(BasePlayer):
         if val == 5:
             self.pp("We have the ace, a ten and two other of a color.")
             self.pp("We know we will win, so I can safely throw the Ace")
-            self.signed_colors[col] = 1
+            self.signed_colors[col] = 2
             return self.cards.filter_color(col).has(ACE)
             
         elif val == 3 or val == 4:
@@ -567,18 +577,24 @@ class AI(BasePlayer):
                 return self.cards.filter_color(col).has(SEVEN)
                 
         elif val == 3:
-            self.signed_colors[col] = 1
+            self.signed_colors[col] = 2
             self.pp("We have the ATK.")
             self.pp("We know we will win. I can safely play the ace") 
             return self.cards.filter_color(col).has(ACE)
             
         elif val > 0:
-            self.signed_colors[col] = -1
+            self.signed_colors[col] = -2
             self.pp("We have a Ten.")
             self.pp("We know we will win. I can safely play the Ten")
             return self.cards.filter_color(col).has(TEN)
                 
-        self.pp("We don't have a playable Ten.")
+        self.pp("We can't signal on a color")
+        for color in colors:
+            filt = self.cards.filter_color(color)
+            if len(filt) == 1 and len(self.mystery_cards.filter_color(color))>5 and filt[0].value in (JACK, QUEEN, KING):
+                self.pp("Give glory sensitive solo card")
+                self.signed_colors[col]=-1
+                return filt[0]
 
         aces = self.cards.filter_value(ACE)
         if aces: lowest = aces[0]
@@ -598,13 +614,13 @@ class AI(BasePlayer):
 
         self.pp("We can't signal an Ace. Play some points")
         for king in self.cards.filter_value(KING):
-            if not king.is_trump:
+            if not king.is_trump and not self.is_high(king):
                 return king
         for queen in self.cards.filter_value(QUEEN):
-            if not queen.is_trump:
+            if not queen.is_trump and not self.is_high(queen):
                 return queen
         for jack in self.cards.filter_value(JACK):
-            if not jack.is_trump:
+            if not jack.is_trump and not self.is_high(jack):
                 return jack
         self.pp("No points to trow away, trow away crap")
         return self.trow_away_card()
@@ -674,13 +690,14 @@ class AI(BasePlayer):
             n = len(self.unknown_cards[0].get_trumps())
             m = len(self.unknown_cards[2].get_trumps())
             mate_trumps = len(self.unknown_cards[1].get_trumps())
-            if n!=0 and m!=0 and trumps and not mate_trumps: #we want to trade 2 for 1
+            totaltrumps = len(self.mystery_cards.get_trumps())
+            if n!=0 and m!=0 and totaltrumps>1 and trumps and not mate_trumps : #we want to trade 2 for 1
                 if len(trumps)>1 or not trumps.has(NINE): # More than one trump, or otherwise we have something lower than the nine
                     self.pp("Mate doesn't have trump, so we try to draw out 2 trumps of the opponent")
                     if high_trumps: return self.play_this_card(high_trumps[0])
-                    options = [c for c in trumps if not self.glory_possibility(c)]
+                    options = [c for c in trumps if not self.glory_possibility(c) and c.value not in (ACE, TEN)]
                     if options: return self.play_this_card(sorted(options)[0])
-                    else: return self.play_this_card(sorted(trumps)[0])
+                    #else: return self.play_this_card(sorted(trumps)[0])
                     
             if self.is_playing:
                 self.pp("We are playing this game")
@@ -798,16 +815,29 @@ class AI(BasePlayer):
                         if len(filt) == 1:
                             return self.play_this_card(filt[0])
                         high_cards = filt.filter(self.is_high)
-                        if high_cards:
+                        if len(played_cards) == 3: high_cards = filt
+                        if high_cards and self.is_playing:
+                            self.pp("We play a high trump, maximizing glory possibility")
                             c, glory = self.maxmin_glory(played_cards, deck=high_cards)
                             return self.play_this_card(c)
+                        if JACK in filt.values():
+                            filt.remove(Card(JACK, self.trump))
+                        self.pp("We play a card that minimizes glory")
                         c, glory = self.maxmin_glory(played_cards, deck=filt, maximize=False)
                         return self.play_this_card(c)
+
                     if winning and self.is_high(highest):
-                        c, glory = self.maxmin_glory(played_cards)
+                        if NINE not in trumps.values() or ACE in trumps.values(): 
+                            c, glory = self.maxmin_glory(played_cards)
+                        else:
+                            c, glory = self.maxmin_glory(played_cards, deck=[a for a in trumps if a.value!=NINE])
                         return self.play_this_card(c)
-                    c, glory = self.maxmin_glory(played_cards,
-                                                 deck=[a for a in trumps if a.value!=NINE], maximize=False)
+                    if ACE not in trumps.values():
+                        c, glory = self.maxmin_glory(played_cards,
+                                                     deck=[a for a in trumps if a.value!=NINE], maximize=False)
+                    else:
+                        c, glory = self.maxmin_glory(played_cards,
+                                                     deck=trumps, maximize=False)
                     return self.play_this_card(c)
                 if len(played_cards) == 3: #we are the last one to play a card
                     if winning:
@@ -947,13 +977,14 @@ class AI(BasePlayer):
         if count == 0:
             self.pp("No valid distributions")
             return None
-        if count>500:
+        #if count>500:
+        if count>maxcount:
             self.pp("Too many distributions, picking randomly")
             distributions = [self.generate_distribution(self.round,self.played_cards) for i in range(maxcount)]
-        elif count>maxcount:
-            self.pp("{!s} distributions, taking a subset".format(count))
-            skipvalue = (count-1)//maxcount + 1
-            distributions = [d for i,d in enumerate(distributions) if i%skipvalue == 0]
+        # elif count>maxcount:
+        #     self.pp("{!s} distributions, taking a subset".format(count))
+        #     skipvalue = (count-1)//maxcount + 1
+        #     distributions = [d for i,d in enumerate(distributions) if i%skipvalue == 0]
         else:
             self.pp("Evaluating {!s} possibilities".format(count))
         
@@ -977,15 +1008,19 @@ class AI(BasePlayer):
                 points = points1 - points2 if self.is_playing else points2 - points1
                 options[c].append(points)
 
-        best_card = None
+        scores = {}
         best_score = -500
         for c,l in options.items():
             avg = sum(l)/len(l)
             self.pp("Minmax: {} has average score of {:.2f}".format(c.pretty(),avg))
             if avg > best_score:
-                best_card = c
                 best_score = avg
-        return best_card
+            scores[c] = avg
+        filt = Cards([c for c, score in scores.items() if score>best_score-1.0])
+        if len(filt) == 1: return filt[0]
+        filt2 = filt.filter(lambda c: not self.is_high(c))
+        if filt2: return filt2[0]
+        return filt.sorted()[0]
 
 
     def glory_possibility(self, card):

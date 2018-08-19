@@ -14,6 +14,8 @@ KLAVERJASSEN = 100
 KLAVERJASSEN_DISPATCH = 101
 KLAVERJASSEN_CHALLENGE = 102
 
+klaverjas_names = ["Ingrid", "Klaas", "Bert", "Fatima", "Piet", "Joop", "Els", "Sjaan", "Achmed", "Bob", "Bep", "Kim"]
+
 #seed for potje met roem op eerste slag: ulonrloyfp
 
 def dummy_printer(s): pass
@@ -423,10 +425,13 @@ class KlaverjasChallenge(BaseDispatcher):
         super().__init__(bot, game_id, msg)
         self.players = OrderedDict({1:"Henk",self.sender_id: self.sender_name})
         self.seeds = [''.join(random.choice(string.ascii_lowercase) for _ in range(10)) for i in range(ngames)]
+        random.seed(self.seeds[0])
+        self.ai_names = random.sample(klaverjas_names, 3)
         self.ngames = ngames
         self.games = {}
         self.games_finished = {}
         self.scores = {}
+        self.gamestrings = {}
         self.unveiled = False
         self.loaded = True
         self.save_game_state()
@@ -440,11 +445,13 @@ class KlaverjasChallenge(BaseDispatcher):
         if pid not in self.games_finished:
             self.games_finished[pid] = 0
             self.scores[pid] = (0,0)
+            self.gamestrings[pid] = ""
         n = self.games_finished[pid]
         if pid != 1:
             g = Klaverjas(self.bot,index,[(pid,name)], self.date, self.seeds[n], startingplayer=n%4)
         else:
             g = Klaverjas(self.bot,index,[], self.date, self.seeds[n], startingplayer=n%4)
+        for i,p in enumerate(g.players[1:]): p.name = self.ai_names[i]
         self.bot.games[index] = g
         g.final_callback = self.game_end
         self.games[pid] = g
@@ -492,13 +499,19 @@ class KlaverjasChallenge(BaseDispatcher):
             self.update_message()
             return "Unveiled"
 
+    def player_stats(self, pid):
+        name = self.players[pid]
+        s1, s2 = self.scores[pid]
+        s = "*{}:{:+d} ({:d} vs {:d}) ".format(name, s1-s2, s1, s2) + self.gamestrings[pid]
+        return s
+
     def generate_unveil_message(self):
         if not self.loaded: self.load()
         l = []
         for sid, name in self.players.items():
             if self.games_finished[sid] == self.ngames:
-                if self.ngames == 1: l.append("*{}: {}".format(name, self.games[sid].summarize()))
-                else: l.append("*{}: {!s} vs {!s}".format(name, self.scores[sid][0],self.scores[sid][1]))
+                if self.ngames == 1: l.append("*{}: {}".format(name, self.games[pid].summarize()))
+                else: l.append(self.player_stats(sid))
         msg = "\n".join(l)
         if not msg: return "Nog niemand is klaar met spelen"
         return msg
@@ -512,7 +525,7 @@ class KlaverjasChallenge(BaseDispatcher):
             else:
                 if self.unveiled:
                     if self.ngames == 1: msg += "*{}: {}\n".format(name, self.games[sender_id].summarize())
-                    else: msg += "*{}: {!s} vs {!s}\n".format(name, self.scores[sender_id][0],self.scores[sender_id][1])
+                    else: msg += self.player_stats(sender_id) + "\n"
                 else:
                     msg += "{}: Klaar (score verborgen)\n".format(name)
         editor = telepot.helper.Editor(self.bot.telebot, self.ident)
@@ -526,14 +539,19 @@ class KlaverjasChallenge(BaseDispatcher):
             pid = 1
         s1, s2 = self.scores[pid]
         p1, p2 = g.points1, g.points2
+        status = "-"
+        if p2 == 0:
+            status = "P"
         if p1 < p2:
             p2 += p1
             p1 = 0
+            status = "N"
         if self.games_finished[pid] % 2 == 0:
             self.scores[pid] = (s1+p1,s2+p2)
         else:
             self.scores[pid] = (s1+p2,s2+p1)
         self.games_finished[pid] += 1
+        self.gamestrings[pid] += status
         if self.games_finished[pid] < self.ngames:
             self.start_game(pid, self.players[pid])
         else:

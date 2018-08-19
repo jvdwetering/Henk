@@ -347,6 +347,8 @@ class RealPlayer(BasePlayer):
         print("%s play a card" % self.name)
         card = raw_input_card("Cardname: ")
         card.owner = self.index
+        if card.color == self.trump:
+            card.is_trump = True
         print(card)
         return card
 
@@ -380,8 +382,8 @@ def raw_input_card(s):
         return card
 
 if __name__ == '__main__':
-    seed = "pbvepmtsth"
-    g = Game(seed=seed, players=[AI0]*4, startingplayer=2)
+    seed = "vcgezwlmaq"
+    g = Game(seed=seed, players=[RealPlayer] + [AI0]*3, startingplayer=2)
     g.play_game()
 #if __name__ == '__main__':
 #    g1, g2 = find_divergent_game(NewAI, BaseAI)
