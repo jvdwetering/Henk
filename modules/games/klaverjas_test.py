@@ -439,10 +439,11 @@ def raw_input_card(s):
         card = Card(value, color)
         return card
 
-##if __name__ == '__main__':
-##    seed = "vcgezwlmaq"
-##    g = Game(seed=seed, players=[RealPlayer] + [AI0]*3, startingplayer=2)
-##    g.play_game()
+if __name__ == '__main__':
+    seed = "hblvkrvcsq"
+    #g = Game(seed=seed, players=[RealPlayer] + [AI0]*3, startingplayer=2)
+    g = Game(seed=seed, players=[AI0]*4, startingplayer=2)
+    g.play_game()
 #if __name__ == '__main__':
 #    g1, g2 = find_divergent_game(NewAI, BaseAI)
 #    print(game_diff(g1,g2))

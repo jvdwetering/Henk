@@ -460,9 +460,8 @@ class AI(BasePlayer):
             if not cols:
                 cols = [c for c, val in self.prefered_colors.items() if val > 0]
             if not cols and len(self.prefered_colors) == 2: # two negative suggestions
-                cols = [i for i in range(4) if i not in (self.trump, self.prefered_colors)]
-            for color in self.prefered_colors:
-                if self.prefered_colors[color] < 0: continue
+                cols = [i for i in range(4) if i != self.trump and i not in self.prefered_colors]
+            for color in cols:
                 poss = non_trumps.filter_color(color)
                 if not poss: continue
                 self.pp("We play the signed color")
@@ -482,9 +481,10 @@ class AI(BasePlayer):
                         self.pp("We try to draw out a trump from the opponent player")
                         return poss[0]
             self.pp("Can't play a signed color, and no TEN to free. Play something low and safe")
-            filt = [c for c in non_trumps if not self.glory_possibility(c)]
+            filt = [c for c in non_trumps if not self.glory_possibility(c) and (c.color not in self.prefered_colors or self.prefered_colors[c.color]>0)]
             if not filt: #there is always a glory chance
-                filt = non_trumps
+                filt = [c for c in non_trumps if c.color not in self.prefered_colors or self.prefered_colors[c.color]>0]
+                if not filt: filt = non_trumps
             lowest = Cards(filt).filter_value(list(sorted(Cards(filt).values()))[0])
             if not lowest:
                 return self.cards.get_trumps()[0]
@@ -642,11 +642,14 @@ class AI(BasePlayer):
         poss = Cards()
         for color in colors:
             filt = self.cards.filter_color(color)
-            if len(filt) >= 4:
-                self.pp("We trow away the lowest card of the color we have the most of")
-                poss = sorted(filt)[:1] # look at lowest two cards
-                c, glory = self.maxmin_glory(self.played_cards, deck=poss, maximize=False,color=color)
-                return c
+            if len(filt) == 1 and filt[0].value not in (ACE, TEN, SEVEN) and len(self.mystery_cards.filter_color(color))>=6:
+                self.pp("Trow away single glory sensitive card")
+                return filt[0]
+            # if len(filt) >= 4:
+            #     self.pp("We trow away the lowest card of the color we have the most of")
+            #     poss = sorted(filt)[:1] # look at lowest two cards
+            #     c, glory = self.maxmin_glory(self.played_cards, deck=poss, maximize=False,color=color)
+            #     return c
             if filt.has(TEN) and not self.is_high(filt.has(TEN)): continue
             filt = filt.filter(lambda c: c.value not in (TEN, ACE))
             poss.extend(filt)
@@ -693,10 +696,14 @@ class AI(BasePlayer):
             totaltrumps = len(self.mystery_cards.get_trumps())
             if n!=0 and m!=0 and totaltrumps>1 and trumps and not mate_trumps : #we want to trade 2 for 1
                 if len(trumps)>1 or not trumps.has(NINE): # More than one trump, or otherwise we have something lower than the nine
-                    self.pp("Mate doesn't have trump, so we try to draw out 2 trumps of the opponent")
-                    if high_trumps: return self.play_this_card(high_trumps[0])
-                    options = [c for c in trumps if not self.glory_possibility(c) and c.value not in (ACE, TEN)]
-                    if options: return self.play_this_card(sorted(options)[0])
+                    
+                    if high_trumps: 
+                        self.pp("Mate doesn't have trump, so we try to draw out 2 trumps of the opponent")
+                        return self.play_this_card(high_trumps[0])
+                    options = [c for c in trumps if not self.glory_possibility(c) and c.value not in (ACE, TEN, NINE)]
+                    if options: 
+                        self.pp("Mate doesn't have trump, so we try to draw out 2 trumps of the opponent")
+                        return self.play_this_card(sorted(options)[0])
                     #else: return self.play_this_card(sorted(trumps)[0])
                     
             if self.is_playing:
@@ -718,7 +725,9 @@ class AI(BasePlayer):
                         poss = [c for c in trumps if self.glory_possibility(c)]
                         if poss: return self.play_this_card(poss[0])
                         else: return self.play_this_card(sorted(trumps)[0])
-                    self.pp("No good trump play, playing non-trump")
+                    if trumps:
+                        self.pp("No good trump play, playing non-trump")
+                    else: self.pp("We have no trumps")
                     return self.play_this_card(self.pick_non_trump())
                 self.pp("Other team doesn't have trumps, so play non trump")
                 return self.play_this_card(self.pick_non_trump())
@@ -760,7 +769,7 @@ class AI(BasePlayer):
                     if winning:
                         self.pp("Our mate is winning, don't trump in")
                         if non_trumps:
-                            if self.is_high(highest):
+                            if self.is_high(highest) or self.will_win_this_round(played_cards):
                                 return self.play_this_card(self.sign_mate())
                             else:
                                 return self.play_this_card(self.trow_away_card())
@@ -1218,7 +1227,9 @@ class MinMaxer(object):
             if self.points2 == 0:
                 self.points1 += 100
             if self.points1 < self.points2: #Nat
-                self.points1 -= 50
+                self.points2 += self.points1
+                self.points1 = 0
+
 
         self.currentplayer = winner
         self.round += 1

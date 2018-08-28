@@ -15,7 +15,7 @@ KLAVERJASSEN_DISPATCH = 101
 KLAVERJASSEN_CHALLENGE = 102
 
 klaverjas_names = ["Ingrid", "Klaas", "Bert", "Fatima", "Piet", "Joop", "Els", "Sjaan", "Achmed", "Bob", "Bep", "Kim",
-                   "Rico", "Benny", "Serena", "Amalia", "D'Shawn", "Jezus", "Sterre", "Denise", "Aagje", "Edith", "Renate",
+                   "Rico", "Benny", "Serena", "Amalia", "D'Shawn", "Jezus", "Sterre", "D'Nise", "Aagje", "Edith", "Renate",
                    "Ling", "Yusuf"]
 
 #seed for potje met roem op eerste slag: ulonrloyfp
@@ -556,7 +556,7 @@ class KlaverjasChallenge(BaseDispatcher):
         status = "-"
         if p2 == 0:
             status = "P"
-        if p1 < p2:
+        if p1 <= p2:
             p2 += p1
             p1 = 0
             status = "N"
