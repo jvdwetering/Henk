@@ -3,6 +3,7 @@ import zlib
 import math
 import os
 import pickle
+import threading
 
 import dataset
 from textblob import TextBlob
@@ -66,7 +67,9 @@ class ManageData(object):
         self.chats = self.db['Chats']
         self.polls = self.db['Polls']
         self.games = self.db['Games']
+        self.maxgameid = next(self.db.query("SELECT MAX(game_id) as max_id FROM Games;"))['max_id']
         self.dummy = False
+        self.datalock = threading.Lock()
 
         self.alltext = "\n".join(i['text'] for i in self.messages.all())
 
@@ -83,11 +86,11 @@ class ManageData(object):
              'from_id': msg['from']['id'], 'from_name': msg['from']['first_name'],
              'time': msg['date'], 'text': msg['text']}
         self.alltext += "\n" + d['text']
-        self.messages.insert(d)
+        with self.datalock: self.messages.insert(d)
 
     def latest_messages(self, chat_id, hours=3):
         begin = int(time.time() - hours*3600)
-        res = self.db.query("SELECT time, from_id, text FROM Messages WHERE (chat_id = %d) AND (time >= %d) ORDER BY time" % (chat_id, begin))
+        with self.datalock: res = self.db.query("SELECT time, from_id, text FROM Messages WHERE (chat_id = %d) AND (time >= %d) ORDER BY time" % (chat_id, begin))
 
         return res
 
@@ -114,92 +117,107 @@ class ManageData(object):
 
     def add_response(self, call, responses, user_id, time):
         if self.dummy: return
-        self.commands.insert({'user_id': user_id, 'call': call, 'response': " | ".join(responses), "time": time})
+        with self.datalock: self.commands.insert({'user_id': user_id, 'call': call, 'response': " | ".join(responses), "time": time})
 
     def get_all_responses(self):
-        com = self.commands.all()
         cdict = {}
-        for c in com:
-            r = c['response'].split(" | ")
-            if c['call'] in cdict:
-                cdict[c['call']].extend(r)
-            else: cdict[c['call']] = r
+        with self.datalock:
+            com = self.commands.all()
+            for c in com:
+                r = c['response'].split(" | ")
+                if c['call'] in cdict:
+                    cdict[c['call']].extend(r)
+                else: cdict[c['call']] = r
 
         return cdict
 
     def get_user_responses(self, user):
-        com = self.commands.find(user_id = user, order_by='time')
+        with self.datalock: com = self.commands.find(user_id = user, order_by='time')
         return [(c['call'], c['response']) for c in com]
 
     def delete_response(self, user, num):
         if self.dummy: return
         res = self.get_user_responses(user)
         if num >= len(res): return False
-        self.commands.delete(user_id=user, call=res[num][0], response=res[num][1])
+        with self.datalock: self.commands.delete(user_id=user, call=res[num][0], response=res[num][1])
         return True
 
 
     def add_alias(self, aliases, user_id, time):
         if self.dummy: return
-        self.aliases.insert({'user_id': user_id, 'aliases': " | ".join(aliases), 'time': time})
+        with self.datalock: self.aliases.insert({'user_id': user_id, 'aliases': " | ".join(aliases), 'time': time})
 
     def get_all_aliases(self):
-        com = self.aliases.all()
-        return [c['aliases'].split(" | ") for c in com]
+        with self.datalock:
+            com = self.aliases.all()
+            return [c['aliases'].split(" | ") for c in com]
 
     def get_user_aliases(self, user):
-        com = self.aliases.find(user_id = user, order_by='time')
-        return [c['aliases'] for c in com]
+        with self.datalock:
+            com = self.aliases.find(user_id = user, order_by='time')
+            return [c['aliases'] for c in com]
 
     def delete_alias(self, user, num):
         if self.dummy: return
         res = self.get_user_aliases(user)
         if num >= len(res): return False
-        self.aliases.delete(user_id=user, aliases=res[num])
+        with self.datalock: self.aliases.delete(user_id=user, aliases=res[num])
         return True
 
 
     def add_poll(self, chat_id, mess_id, poll_id, text, votes):
         if self.dummy: return
         d = {'chat_id': chat_id, 'mess_id': mess_id, 'poll_id': poll_id, 'text': text, 'votes': votes}
-        if self.polls.find_one(chat_id=chat_id,mess_id=mess_id):
-            self.polls.update(d, ['chat_id', 'mess_id'])
-        else:
-            self.polls.insert(d)
+        with self.datalock:
+            if self.polls.find_one(chat_id=chat_id,mess_id=mess_id):
+                self.polls.update(d, ['chat_id', 'mess_id'])
+            else:
+                self.polls.insert(d)
 
     def get_all_polls(self):
-        return self.polls.find(order_by='poll_id')
+        with self.datalock: return self.polls.find(order_by='poll_id')
 
 
     def add_game(self, game_type, game_id, game_data, date, is_active):
         if self.dummy: return
         d = {'game_type': game_type, 'game_id': game_id,
              'game_data': game_data, 'date': date, 'is_active': is_active}
-        if self.games.find_one(game_id=game_id):
-            self.games.update(d, ['game_id'])
-        else:
-            self.games.insert(d)
+        with self.datalock:
+            if self.games.find_one(game_id=game_id):
+                self.games.update(d, ['game_id'])
+            else:
+                self.maxgameid += 1
+                self.games.insert(d)
+
+    def get_unique_game_id(self):
+        with self.datalock:
+            self.maxgameid += 1
+            return self.maxgameid
 
     def get_active_games(self, game_type=None):
-        if not game_type:
-            return self.games.find(is_active=True, order_by='game_id')
-        return self.games.find(game_type=game_type, is_active=True, order_by='game_id')
+        with self.datalock:
+            if not game_type:
+                return self.games.find(is_active=True, order_by='game_id')
+            return self.games.find(game_type=game_type, is_active=True, order_by='game_id')
 
     def load_game(self, game_id):
-        g = self.games.find_one(game_id=game_id)
-        return pickle.loads(g['game_data'])
+        with self.datalock:
+            g = self.games.find_one(game_id=game_id)
+            return pickle.loads(g['game_data'])
 
 
     def set_silent_mode(self, chat_id, setsilent):
         if self.dummy: return
-        if self.chats.find_one(chat_id = chat_id):
-            self.chats.update({"chat_id": chat_id, "silent":setsilent}, ['chat_id'])
-        else:
-            self.chats.insert({"chat_id": chat_id, "silent":setsilent})
+        with self.datalock:
+            if self.chats.find_one(chat_id = chat_id):
+                self.chats.update({"chat_id": chat_id, "silent":setsilent}, ['chat_id'])
+            else:
+                self.chats.insert({"chat_id": chat_id, "silent":setsilent})
 
     def get_silent_chats(self):
-        t = self.chats.find(silent=1)
-        return [i['chat_id'] for i in t]
+        with self.datalock:
+            t = self.chats.find(silent=1)
+            return [i['chat_id'] for i in t]
         
 
 

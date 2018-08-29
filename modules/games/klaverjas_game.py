@@ -406,7 +406,7 @@ class KlaverjasDispatcher(BaseDispatcher):
                 return "Er moet wel iemand meedoen"
             if sender != self.sender_id:
                 return "Alleen {} kan dit potje beginnen".format(self.sender_name)
-            index = len(self.bot.dataManager.games)
+            index = self.bot.dataManager.get_unique_game_id()
             self.started = True
             g = Klaverjas(self.bot,index,self.players,self.date, self.cmd)
             g.final_callback = self.game_end
@@ -453,7 +453,7 @@ class KlaverjasChallenge(BaseDispatcher):
         self.save_game_state()
 
     def start_game(self, pid, name):
-        index = len(self.bot.dataManager.games)
+        index = self.bot.dataManager.get_unique_game_id()
         if pid not in self.games_finished:
             self.games_finished[pid] = 0
             self.scores[pid] = (0,0)

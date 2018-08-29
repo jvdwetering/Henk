@@ -27,7 +27,7 @@ class Games(Module):
         bot.add_callback_query("games", self.callback)
 
     def klaverjassen(self, bot, msg):
-        ident = len(bot.dataManager.games)
+        ident = bot.dataManager.get_unique_game_id()
         if msg.chat_type == "private":
             g = Klaverjas(bot, ident, [(msg.sender,msg.sendername)], msg.date, msg.command.strip())
         else:
@@ -35,12 +35,12 @@ class Games(Module):
         bot.games[ident] = g
 
     def klaverchallenge(self, bot, msg):
-        ident = len(bot.dataManager.games)
+        ident = bot.dataManager.get_unique_game_id()
         g = KlaverjasChallenge(bot, ident, msg)
         bot.games[ident] = g
 
     def klaverchallenge4(self, bot, msg):
-        ident = len(bot.dataManager.games)
+        ident = bot.dataManager.get_unique_game_id()
         g = KlaverjasChallenge(bot, ident, msg, ngames=4)
         bot.games[ident] = g
 
