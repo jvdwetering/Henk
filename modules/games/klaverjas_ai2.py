@@ -284,15 +284,19 @@ class AI(BasePlayer):
                                 self.index_to_deck(m.owner).remove(Card(ACE,m.color))
         
         for c in cards:
-            if c.color != color and c.value == TEN:
-                if c.owner == self.index: continue
-                self.pp("Player trew away TEN, must not have the ACE")
-                if c.owner == self.partner:
-                    self.prefered_colors[c.color] = -2
-                elif c.color not in self.prefered_colors:
-                    self.prefered_colors[c.color] = 1
-                d = self.index_to_deck(c.owner)
-                if Card(ACE, c.color) in d: d.remove(Card(ACE, c.color))
+            if c.owner == self.index: continue
+            if c.color != color:
+                if c.owner == self.partner: self.prefered_colors[color] = -2
+                elif color not in self.prefered_colors:
+                    self.prefered_colors[color] = 1
+                if c.value == TEN:
+                    self.pp("Player trew away TEN, must not have the ACE")
+                    if c.owner == self.partner:
+                        self.prefered_colors[c.color] = -2
+                    elif c.color not in self.prefered_colors:
+                        self.prefered_colors[c.color] = 1
+                    d = self.index_to_deck(c.owner)
+                    if Card(ACE, c.color) in d: d.remove(Card(ACE, c.color))
 
         if color == self.trump: #trump asked
             highest = cards[0]
@@ -720,7 +724,7 @@ class AI(BasePlayer):
             if self.is_playing:
                 self.pp("We are playing this game")
                 if n + m != 0:
-                    if high_trumps and (len(trumps)>1 or not mate_trumps):
+                    if high_trumps and (len(trumps)>1 or (not mate_trumps and n>0 and m>0)):
                         self.pp("The other team might still have trumps")
                         return self.play_this_card(high_trumps[0])
                     if len(trumps) > 1:
@@ -894,6 +898,17 @@ class AI(BasePlayer):
                     if winning:
                         if self.is_high(highest) or (highest.color == self.trump and color != self.trump):
                             self.pp("We are currently winning with the highest card")
+                            c, glory = self.maxmin_glory(played_cards)
+                            if glory > 30:
+                                self.pp("Lot of glory to be made. Play the right card")
+                                return self.play_this_card(c)
+                            if any(c>highest for c in possibilities):
+                                self.remove_known_cards(played_cards)
+                                if len([c for c in self.cards if self.is_high(c)]) > 1:
+                                    self.pp("We have high cards so we take over this one")
+                                    filt = [c for c in possibilities if c>highest]
+                                    c, glory = self.maxmin_glory(played_cards, deck=filt)
+                                    return self.play_this_card(c)
                             filt = [c for c in possibilities if c.value != TEN]
                             c, glory = self.maxmin_glory(played_cards, deck=filt)
                             if glory:
