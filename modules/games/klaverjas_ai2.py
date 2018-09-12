@@ -282,7 +282,17 @@ class AI(BasePlayer):
                         if round < 6 and m.value == TEN:
                             if Card(ACE, m.color) in self.index_to_deck(m.owner):
                                 self.index_to_deck(m.owner).remove(Card(ACE,m.color))
-                    
+        
+        for c in cards:
+            if c.color != color and c.value == TEN:
+                self.pp("Player trew away TEN, must not have the ACE")
+                if c.owner == self.partner:
+                    self.prefered_colors[c.color] = -2
+                elif c.color not in self.prefered_colors:
+                    self.prefered_colors[c.color] = 1
+                d = self.index_to_deck(c.owner)
+                if Card(ACE, c.color) in d: d.remove(Card(ACE, c.color))
+
         if color == self.trump: #trump asked
             highest = cards[0]
             for c in cards[1:]:
@@ -883,14 +893,15 @@ class AI(BasePlayer):
                     if winning:
                         if self.is_high(highest) or (highest.color == self.trump and color != self.trump):
                             self.pp("We are currently winning with the highest card")
-                            c, glory = self.maxmin_glory(played_cards)
+                            filt = [c for c in possibilities if c.value != TEN]
+                            c, glory = self.maxmin_glory(played_cards, deck=filt)
                             if glory:
                                 self.pp("There is a possibility for glory, try it")
                                 return self.play_this_card(c)
                             poss = possibilities.sorted()
                             if self.is_high(poss[-1]):
                                 return self.play_this_card(poss[-2])
-                            return self.play_this_card(poss[-1])
+                            return self.play_this_card(filt[-1])
                         filt = Cards([c for c in possibilities if c>highest]).sorted()
                         if filt and self.is_high(filt[-1]):
                             f = [c for c in filt if self.is_high(c)]
@@ -973,6 +984,8 @@ class AI(BasePlayer):
         self.pp("Minmaxing")
         options = {c:list() for c in self.legal_cards(self.played_cards)}
         self.remove_known_cards(self.played_cards)
+        if self.played_cards and self.played_cards[0].value == TEN:
+            self.player_has_card(self.played_cards[0].owner, Card(ACE, self.played_cards[0].color))
         if self.round < 6:
             maxcount = 100//len(options) if not amount else amount
         else:
