@@ -285,6 +285,7 @@ class AI(BasePlayer):
         
         for c in cards:
             if c.color != color and c.value == TEN:
+                if c.owner == self.index: continue
                 self.pp("Player trew away TEN, must not have the ACE")
                 if c.owner == self.partner:
                     self.prefered_colors[c.color] = -2
