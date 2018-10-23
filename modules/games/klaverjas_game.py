@@ -565,6 +565,7 @@ class KlaverjasChallenge(BaseDispatcher):
         else:
             self.scores[pid] = (s1+p2,s2+p1)
         self.games_finished[pid] += 1
+        if self.games_finished[pid] % 4 == 0: status += " "
         self.gamestrings[pid] += status
         if self.games_finished[pid] < self.ngames:
             self.start_game(pid, self.players[pid])
