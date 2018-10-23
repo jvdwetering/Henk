@@ -503,22 +503,29 @@ class AI(BasePlayer):
             lowest = Cards(filt).filter_value(list(sorted(Cards(filt).values()))[0])
             if not lowest:
                 return self.cards.get_trumps()[0]
-            return random.choice(lowest)
+            #return random.choice(lowest)
+            return lowest[0]
 
         poss = Cards([c for c in high_cards if self.glory_possibility(c)])
         if poss:
             self.pp("We have a high card with a chance for glory")
             if poss.filter_value(TEN):
-                return random.choice(poss.filter_value(TEN))
+                #return random.choice(poss.filter_value(TEN))
+                return poss.filter_value(TEN)[0]
             if poss.filter_value(ACE):
-                return random.choice(poss.filter_value(ACE))
-            return random.choice(poss)
+                #return random.choice(poss.filter_value(ACE))
+                return poss.filter_value(ACE)[0]
+            #return random.choice(poss)
+            return poss[0]
         self.pp("We play a high card")
         if high_cards.filter_value(TEN):
-            return random.choice(high_cards.filter_value(TEN))
+            #return random.choice(high_cards.filter_value(TEN))
+            return high_cards.filter_value(TEN)[0]
         if high_cards.filter_value(ACE):
-            return random.choice(high_cards.filter_value(ACE))
-        return random.choice(high_cards)
+            #return random.choice(high_cards.filter_value(ACE))
+            return high_cards.filter_value(ACE)[0]
+        #return random.choice(high_cards)
+        return high_cards[0]
 
     def sign_mate(self):
         '''Pick a card to trow away at your mate (like he is going to win)'''

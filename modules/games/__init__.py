@@ -23,6 +23,9 @@ class Games(Module):
         bot.add_slash_command("klaverjassen", self.klaverjassen)
         bot.add_slash_command("klaverchallenge", self.klaverchallenge)
         bot.add_slash_command("klaverchallenge4", self.klaverchallenge4)
+        bot.add_slash_command("klaverchallenge8", self.klaverchallenge8)
+        bot.add_slash_command("klaverchallenge12", self.klaverchallenge8)
+        bot.add_slash_command("klaverchallenge16", self.klaverchallenge16)
         #bot.add_callback_query("gamestart", self.callbackstart)
         bot.add_callback_query("games", self.callback)
 
@@ -42,6 +45,21 @@ class Games(Module):
     def klaverchallenge4(self, bot, msg):
         ident = bot.dataManager.get_unique_game_id()
         g = KlaverjasChallenge(bot, ident, msg, ngames=4)
+        bot.games[ident] = g
+
+    def klaverchallenge8(self, bot, msg):
+        ident = bot.dataManager.get_unique_game_id()
+        g = KlaverjasChallenge(bot, ident, msg, ngames=8)
+        bot.games[ident] = g
+
+    def klaverchallenge12(self, bot, msg):
+        ident = bot.dataManager.get_unique_game_id()
+        g = KlaverjasChallenge(bot, ident, msg, ngames=12)
+        bot.games[ident] = g
+
+    def klaverchallenge16(self, bot, msg):
+        ident = bot.dataManager.get_unique_game_id()
+        g = KlaverjasChallenge(bot, ident, msg, ngames=16)
         bot.games[ident] = g
 
     def callback(self, bot, msg):
