@@ -440,8 +440,8 @@ def raw_input_card(s):
         return card
 
 if __name__ == '__main__':
-    seed = "iilrryvbil"
-    g = Game(seed=seed, players=[RealPlayer] + [AI0]*3, startingplayer=3)
+    seed = "sshxzdfcug"
+    g = Game(seed=seed, players=[RealPlayer] + [BaseAI]*3, startingplayer=2)
     #g = Game(seed=seed, players=[AI0]*4, startingplayer=3)
     g.play_game()
 #if __name__ == '__main__':

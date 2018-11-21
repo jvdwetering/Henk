@@ -845,8 +845,9 @@ class AI(BasePlayer):
                         self.pp("We have to overtrump")
                         if len(filt) == 1:
                             return self.play_this_card(filt[0])
-                        high_cards = filt.filter(self.is_high)
-                        if len(played_cards) == 3: high_cards = filt
+                        if self.will_win_this_round(played_cards):
+                            high_cards = filt
+                        else: high_cards = filt.filter(self.is_high)
                         if high_cards and self.is_playing:
                             self.pp("We play a high trump, maximizing glory possibility")
                             c, glory = self.maxmin_glory(played_cards, deck=high_cards)
