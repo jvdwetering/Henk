@@ -219,5 +219,12 @@ def glory_calculation(cards, trump):
         if (order[3] == order[1] + 2) and (order[2] == order[1] + 1):
             glory += 20
             return glory
+    #100 points glory for 4 cards with the same value, 200 if it's four Jacks.
+    values = Cards(cards).values()
+    if len(set(values)) == 1:
+        glory += 100
+        if JACK in values:
+            glory += 100
+
     return glory
     
