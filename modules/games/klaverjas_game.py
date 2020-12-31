@@ -323,6 +323,7 @@ class Klaverjas(BaseGame):
     
     def game_end_message(self):
         msg  = "Klaverjas potje met seed {}\n".format(self.seed)
+        msg += "Vergelijken? http://vwijngaarden.org:8099/compare/?seed={}\n".format(self.seed)
         msg += "Round {}\n".format(len(self.round_lists))
         if self.p1.is_playing:
             msg += "Team 1: *{}*, *{}*\n".format(self.p1.name, self.p3.name)
