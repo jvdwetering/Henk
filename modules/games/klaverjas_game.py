@@ -1,3 +1,4 @@
+import json
 import random
 import string
 from collections import OrderedDict
@@ -284,6 +285,7 @@ class Klaverjas(BaseGame):
             #for i in self.player_names: self.bot.telebot.sendMessage(i, msg, parse_mode="Markdown")
             self.game_ended()
             self.save_game_state()
+            self.save_game_result()
             return
         
         self.round += 1
@@ -369,6 +371,25 @@ class Klaverjas(BaseGame):
         if self.pointsglory2: msg += "{!s} ({!s})".format(self.points2,self.pointsglory2)
         else: msg += "{!s}".format(self.points2)
         return msg
+
+    def save_game_result(self):
+      self.bot.dataManager.add_klaverjas_result(self.seed, self.game_id, json.dumps(self.game_result()))
+
+    def game_result(self):
+      return {
+        'players': [self.p1.name, self.p2.name, self.p3.name, self.p4.name],
+        'startingPlayer': self.round_lists[0][0].owner,
+        'trump': colornames[self.trump],
+        'scores': [self.points1, self.points2],
+        'glory': [self.pointsglory1, self.pointsglory2],
+        'rounds': [
+          [(valuenames[card.value], colornames[card.color]) for card in cards] for cards in self.round_lists
+        ],
+        'roundWinners': [
+          highest_card(cards, self.trump).owner for cards in self.round_lists
+        ],
+        'roundGlory': self.glory_lists,
+      }
 
 
 class KlaverjasDispatcher(BaseDispatcher):

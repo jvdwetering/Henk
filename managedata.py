@@ -68,6 +68,7 @@ class ManageData(object):
         self.polls = self.db['Polls']
         self.games = self.db['Games']
         self.maxgameid = next(self.db.query("SELECT MAX(game_id) as max_id FROM Games;"))['max_id']
+        self.klaverjas_results = self.db['KlaverjasResults']
         self.dummy = False
         self.datalock = threading.Lock()
 
@@ -205,6 +206,15 @@ class ManageData(object):
             g = self.games.find_one(game_id=game_id)
             return pickle.loads(g['game_data'])
 
+
+    def add_klaverjas_result(self, seed, game_id, result):
+        if self.dummy: return
+        d = {'seed': seed, 'game_id': game_id, 'result': result}
+        with self.datalock:
+            if self.klaverjas_results.find_one(game_id=game_id):
+                self.klaverjas_results.update(d, ['game_id'])
+            else:
+                self.klaverjas_results.insert(d)
 
     def set_silent_mode(self, chat_id, setsilent):
         if self.dummy: return
