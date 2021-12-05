@@ -1,3 +1,7 @@
+#############################################################################
+# THIS MODULE IS NO LONGER USED AS IT IS SUPERCEDED BY TELEGRAM'S OWN FEATURE
+#############################################################################
+
 import json
 
 import telepot

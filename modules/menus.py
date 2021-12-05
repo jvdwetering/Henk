@@ -1,3 +1,7 @@
+#############################################################################
+# THIS MODULE IS NO LONGER USED AS IT WOULD NEED TO BE UPDATED TO WORK AGAIN
+#############################################################################
+
 import urllib.request
 import datetime
 from html import unescape

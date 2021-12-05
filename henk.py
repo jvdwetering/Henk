@@ -3,7 +3,7 @@
 '''
 Henkbot 2017
 Should be run in at least Python 3.5 (3.4 maybe works as well)
-Dependencies: telepot, simpleeval, dataset, textblob
+Dependencies: telepot, simpleeval, dataset, textblob, unidecode
 Install these with "pip install libname" and for textblob additionally call python -m textblob.download_corpora
 
 '''
@@ -157,9 +157,9 @@ class Henk(object):
             else: self.sendMessage(chat_id,"Goedemorgen")
             time.sleep(1.0)
             if probaccept(0.5):
-                return modules.weather.weather_report()
+                return modules.entertainment.get_silmaril()
             elif probaccept(0.5):
-                return modules.entertainment.get_sonnet()
+                return modules.weather.weather_report()
             elif probaccept(0.5):
                 return modules.entertainment.get_joke()
             else:
@@ -222,7 +222,7 @@ class Henk(object):
                 self.lastupdate = t
             if self.react_to_query(c):
                 p = self.pick(self.userresponses[self.aliasdict[c]])
-                p = p.replace("!name", msg.sendername)
+                # p = p.replace("!name", msg.sendername)
                 if p: self.sendMessage(msg.chat_id, p)
                 return
             
@@ -270,7 +270,6 @@ class Henk(object):
         if options:
             if self.react_to_query(options[0]):
                 p = self.pick(self.userresponses[self.aliasdict[options[0]]])
-                p = p.replace("!name", msg.sendername)
                 if p: self.sendMessage(msg.chat_id, p)
                 return
 

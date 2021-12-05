@@ -1,5 +1,4 @@
 import time
-import zlib
 import math
 import os
 import pickle
@@ -16,9 +15,11 @@ except:
 password = f.read().strip()
 f.close()
 
+
 def encrypt():
     call(r"openssl enc -aes-256-cbc -salt -in data.db -out data.db.enc -pass pass:"+password,
          shell=True)
+
 
 def decrypt():
     call(r"openssl enc -d -aes-256-cbc -salt -in data.db.enc -out data.db -pass pass:"+password,
@@ -45,6 +46,7 @@ class ManageData(object):
     def __init__(self):
         f = open("isencrypted.txt", "r")
         val = int(f.read())
+        f.close()
         if val:
             decrypt()
             time.sleep(0.5)
@@ -65,14 +67,16 @@ class ManageData(object):
         self.commands = self.db['Commands']
         self.aliases = self.db['Aliases']
         self.chats = self.db['Chats']
-        self.polls = self.db['Polls']
+        self.polls = self.db['Polls']  # TODO: This feature is no longer needed, so we can remove it.
         self.games = self.db['Games']
         self.maxgameid = next(self.db.query("SELECT MAX(game_id) as max_id FROM Games;"))['max_id']
         self.klaverjas_results = self.db['KlaverjasResults']
         self.dummy = False
         self.datalock = threading.Lock()
 
-        self.alltext = "\n".join(i['text'] for i in self.messages.all())
+        # self.alltext = "\n".join(i['text'] for i in self.messages.all())
+        recentish_messages = self.db.query("SELECT text FROM Messages WHERE (time >= %d) ORDER BY time" % int(time.time() - 90*24*3600))
+        self.alltext = "\n".join(i['text'] for i in recentish_messages)
 
     def close(self):
         print(os.getcwd())
