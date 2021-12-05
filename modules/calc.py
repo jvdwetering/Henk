@@ -22,7 +22,7 @@ class Calc(Module):
     def calc(self, bot, msg):
         text = msg.command
         if text.endswith("?"): text = text[:-1]
-        return self.response_math(text,bot,clean=True)
+        return self.response_math(text,bot,clean=False)
 
     def stats(self, bot, msg):
         m = bot.sendMessage(msg.chat_id, "effe tellen")
@@ -54,7 +54,10 @@ class Calc(Module):
             if type(result) == bool:
                 if result: result = "waar"
                 else: result = "niet waar"
-            return "Dat is " + str(result)
+            s = str(result)
+            if len(s) > 500:
+                return "Ik heb hier een bewijs voor, maar het is te lang om in de kantlijn te passen"
+            return "Dat is " + s
         except (simpleeval.InvalidExpression, simpleeval.FunctionNotDefined,
                 simpleeval.AttributeDoesNotExist,KeyError):
             if not clean: return bot.pick(bot.commands["math_error"])
