@@ -26,7 +26,16 @@ class Calc(Module):
 
     def stats(self, bot, msg):
         m = bot.sendMessage(msg.chat_id, "effe tellen")
-        text = self.response_stats(bot, msg.chat_id)
+        s = msg.command.strip()
+        if not s: s = "6"
+        try:
+            hours = int(s)
+        except ValueError:
+            hours = 6
+        if hours < 1: hours = 6
+        if hours > 24*7: hours = 24*7
+
+        text = self.response_stats(bot, msg.chat_id, hours)
         bot.telebot.editMessageText(telepot.message_identifier(m), text)
         return
 
@@ -55,9 +64,9 @@ class Calc(Module):
         except Exception:
             return "computer says no"
 
-    def response_stats(self, bot, chat_id):
-        total, topwords, p, char = bot.dataManager.spam_stats(chat_id,hours=6)
-        s = "Er zijn %d berichten verstuurd in de afgelopen 6 uur" % total
+    def response_stats(self, bot, chat_id, hours=6):
+        total, topwords, p, char = bot.dataManager.spam_stats(chat_id,hours=hours)
+        s = "Er zijn %d berichten verstuurd in de afgelopen %d uur" % (total,hours)
         s += "\nHardste spammers: "
         for i in range(min([len(p),3])):
             n, c = p[i][0], p[i][1]

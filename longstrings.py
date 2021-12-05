@@ -30,9 +30,6 @@ helptext = """Ik kan allemaal dingen doen voor je door me het netjes te vragen, 
 Een weerbericht geven: /weather
 "Henk, wat voor weer wordt het?"
 
-Het menu van de Refter voor vandaag ophalen: /refter
-"Henk, wat heeft de Refter vandaag?"
-
 Informatie geven over berichten stats: /stats
 "Henk, hoeveel berichten zijn er?", "Hey Henk, wie hebben er gespamd?"
 
@@ -40,12 +37,12 @@ Zoeken op wikipedia: /wiki <text>
 "wat is <text>", "definieer <text>"
 Bijvoorbeeld: Henk, wat is Nederland?
 
-Polls aanmaken: /poll polltext | optie1 | optie2 | optie3
-
 Dingen voor je berekenen: /calc <expression>
 "bereken <stuff>", "hoeveel is <stuff>"
 Bijvoorbeeld: Henk, bereken 38*3^(5+ln(sin(pi/2)))
 
+Een paragraaf van de Silmarillion voordragen: /tolkien n
+Geeft de n-de paragraaf, of type "/tolkien" om de volgende paragraaf te krijgen
 
 Je kan me ook nieuwe responses aanleren.
 Voor meer informatie type /learnhelp
