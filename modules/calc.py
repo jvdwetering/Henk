@@ -60,7 +60,7 @@ class Calc(Module):
             return "Dat is " + s
         except (simpleeval.InvalidExpression, simpleeval.FunctionNotDefined,
                 simpleeval.AttributeDoesNotExist,KeyError):
-            if not clean: return bot.pick(bot.commands["math_error"])
+            if not clean: return bot.pick(bot.responses["math_error"])
             else: return "Sorry, dat snap ik niet :("
         except simpleeval.NumberTooHigh:
             return "Sorry, dat is te moeilijk voor me"
