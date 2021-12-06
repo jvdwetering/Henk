@@ -34,7 +34,7 @@ class Learning(Module):
         if not c.startswith("$"):
             if c in bot.aliasdict: bot.userresponses[bot.aliasdict[c]].extend(responses)
             else:
-                bot.aliasdict[c] = len(bot.userresponses) #add new to list of aliases
+                bot.aliasdict[c] = len(bot.userresponses)+1 #add new to list of aliases
                 bot.userresponses[bot.aliasdict[c]] = responses
         return "Ik denk dat ik het snap"
 
@@ -93,6 +93,7 @@ class Learning(Module):
         response = "Ik ken %d verschillende responses op deze query\n" % count
         if len(aliases) == 1:
             options = difflib.get_close_matches(s,l)
+            if s in options: options.remove(s)
             if not options:
                 response += "Het lijkt er op dat ik geen synoniemen van deze term ken, misschien wil je me er een paar leren met /alias?"
             else:
