@@ -41,9 +41,9 @@ class Entertainment(Module):
         bot.add_slash_command("tolkien", self.tolkien)
 
     def get_item(self, l, v):
-        self.counters[v] += 1
         try:
             result = l[self.counters[v]]
+            self.counters[v] += 1
         except KeyError:  # Time to reset the counter
             self.counters[v] = 0
             result = l[self.counters[v]]
@@ -83,9 +83,10 @@ class Entertainment(Module):
         return self.get_item(self.sonnets, "sonnets")
 
     def get_silmaril(self, *args):
+        counter = self.counters["silmaril"]
         s = self.get_item(self.silmaril, "silmaril")
         self.tolkien_calls.append((time.time(),len(s)))
-        return s
+        return f"{counter}. {s}"
 
     def tolkien(self, bot, msg):
         s = msg.command.strip()
