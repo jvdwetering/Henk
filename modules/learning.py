@@ -42,8 +42,6 @@ class Learning(Module):
 
     def myresponses(self, bot, msg):
         responses = bot.dataManager.get_user_responses(msg.sender)
-
-        msg.command.split()
         s = "Lijst van je geleerde commando's:"
 
         if "grouped" in msg.command.split():
