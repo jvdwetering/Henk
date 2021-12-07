@@ -85,7 +85,7 @@ class Entertainment(Module):
     def get_silmaril(self, *args):
         s = self.get_item(self.silmaril, "silmaril")
         self.tolkien_calls.append((time.time(),len(s)))
-        return s
+        return f"{self.counters['silmaril']}. {s}"
 
     def tolkien(self, bot, msg):
         s = msg.command.strip()
