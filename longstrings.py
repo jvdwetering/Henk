@@ -60,6 +60,7 @@ learnhelp = """
 /learn <query> -> <response1> | <response2> | ... | <responseN>
 Voorbeeld: /learn Henk, hoe gaat het met je? -> Goed hoor | Niet zo goed
 /myresponses - Laat je zien welke responses je mij allemaal aangeleerd hebt (je kan alleen maar je eigen responses zien)
+  - Met argument "grouped" krijg je de responses gegroepeerd per commando te zien
 /deleteresponse n - Verwijdert response n (nummer zichtbaar bij /myresponses)
 
 /alias <query1> | <query2> | ... | <queryN>
