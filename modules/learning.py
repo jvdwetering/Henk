@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from .base import Module
 from util import prepare_query
 import difflib
@@ -39,10 +41,20 @@ class Learning(Module):
         return "Ik denk dat ik het snap"
 
     def myresponses(self, bot, msg):
-        r = bot.dataManager.get_user_responses(msg.sender)
+        responses = bot.dataManager.get_user_responses(msg.sender)
         s = "Lijst van je geleerde commando's:"
-        for i, d in enumerate(r):
-            s += "\n%d.: %s -> %s" % (i, d[0], d[1])
+
+        if "grouped" in msg.command.split():
+            responses_per_call = defaultdict(list)
+            for d in responses:
+                responses_per_call[d[0]].append(d[1])
+
+            for command, responses in responses_per_call.items():
+                s += "\n%s -> %s" % (command, " | ".join(responses))
+        else:
+            for i, d in enumerate(responses):
+                s += "\n%d.: %s -> %s" % (i, d[0], d[1])
+
         lines = s.splitlines()
         for i in range(0, len(lines), 15):
             bot.sendMessage(msg.chat_id, "\n".join(lines[i:i+15]))

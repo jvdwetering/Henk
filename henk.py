@@ -365,6 +365,7 @@ if __name__ == '__main__':
 
     telebot = telepot.Bot(TOKEN)
     answerer = telepot.helper.Answerer(telebot)
+    henk = None
     
     try: 
         henk = Henk(telebot)
@@ -398,6 +399,7 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         pass
     finally:
-        henk.dataManager.close()
-        if not henk.should_exit:
-            telebot.sendMessage(PPA,"Ik ga even slapen nu. doei doei")
+        if henk:
+            henk.dataManager.close()
+            if not henk.should_exit:
+                telebot.sendMessage(PPA,"Ik ga even slapen nu. doei doei")
