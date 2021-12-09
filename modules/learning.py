@@ -56,8 +56,15 @@ class Learning(Module):
                 s += "\n%d.: %s -> %s" % (i, d[0], d[1])
 
         lines = s.splitlines()
-        for i in range(0, len(lines), 15):
-            bot.sendMessage(msg.chat_id, "\n".join(lines[i:i+15]))
+        reply = ""
+        for line in lines:
+            if len(reply) + len(line) > bot.MAX_MESSAGE_LENGTH:
+                bot.sendMessage(msg.chat_id, reply)
+                reply = line
+            else:
+                reply += "\n" + line
+
+        bot.sendMessage(msg.chat_id, reply)
         return
 
     def deleteresponse(self, bot, msg):
