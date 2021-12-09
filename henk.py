@@ -33,6 +33,8 @@ import modules
 
 
 class Henk(object):
+    MAX_MESSAGE_LENGTH = 4096  # as specified in https://limits.tginfo.me/en
+
     def __init__(self, telebot, isdummy=False):
         self.telebot = telebot # the bot interface for Telegram
         self.dataManager = ManageData() #interface to the database
