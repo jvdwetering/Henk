@@ -52,6 +52,12 @@ error_types = {
 import subprocess
 import time
 
+def sanity_check(s):
+    checks = [r'\equation', r'\newread',r'\file', r'\repeat']
+    for c in checks:
+        if s.find(c) != -1: return False
+    return True
+
 def latex_to_png(latex):
     if os.path.isfile("latex.log"): os.remove("latex.log")
     if os.path.isfile("latex.pdf"): os.remove("latex.pdf")
@@ -66,7 +72,7 @@ def latex_to_png(latex):
                        stdout=subprocess.PIPE, shell=False,
                        universal_newlines=True)
     if "Fatal error occurred" in r.stdout:
-        return r
+        #return r
         return "errawr", 0
     #print(str(r))
     time.sleep(0.2)
@@ -82,9 +88,13 @@ def latex_to_png(latex):
     return f, 1
 
 def math_to_png(s):
+    if not sanity_check(s):
+        return ("Stop met me proberen te breken", False)
     return latex_to_png(template1.format(s))
 
 def code_to_png(s, language='python'):
+    if not sanity_check(s):
+        return ("Stop met me proberen te breken", False)
     return latex_to_png(template2.format(language, s))
 
 
