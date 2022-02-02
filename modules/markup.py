@@ -53,7 +53,7 @@ import subprocess
 import time
 
 def sanity_check(s):
-    checks = [r'\equation', r'\newread',r'\file', r'\repeat']
+    checks = [r'\end{equation}', r'\newread',r'\file', r'\repeat', r'\loop']
     for c in checks:
         if s.find(c) != -1: return False
     return True
