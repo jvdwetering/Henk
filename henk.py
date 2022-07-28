@@ -158,9 +158,9 @@ class Henk(object):
             elif msg.find('morgen')!=-1: self.sendMessage(chat_id, msg)
             else: self.sendMessage(chat_id,"Goedemorgen")
             time.sleep(1.0)
+            # if probaccept(0.5):
+                # return modules.entertainment.get_silmaril()
             if probaccept(0.5):
-                return modules.entertainment.get_silmaril()
-            elif probaccept(0.5):
                 return modules.weather.weather_report()
             elif probaccept(0.5):
                 return modules.entertainment.get_joke()
