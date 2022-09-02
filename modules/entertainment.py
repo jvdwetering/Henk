@@ -9,7 +9,7 @@ from util import datadir, probaccept
 
 class Entertainment(Module):
     def initialise(self, bot):
-        f = open(os.path.join(datadir,"grappen.txt"),"r",encoding='latin-1')
+        f = open(os.path.join(datadir,"dadjokes.txt"),"r",encoding='latin-1')
         self.jokes = f.read().splitlines()
         f.close()
         f = open(os.path.join(datadir,"weetjes.txt"),"r",encoding='latin-1')
